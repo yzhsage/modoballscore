@@ -276,8 +276,8 @@ async function dbSet(key, value) {
    常數設定
 --------------------------------------------------------- */
 const CHILDREN = [
-  { id: 'duoduo', name: '多多', color: '#2F5FDB', soft: '#EAF0FE', dark: '#1F3F99', emoji: '🚀' },
-  { id: 'qiuqiu', name: '球球', color: '#D3453B', soft: '#FBEBEA', dark: '#9C2E27', emoji: '🔥' },
+  { id: 'duoduo', name: '多多', color: '#2F5FDB', soft: '#EAF0FE', dark: '#1F3F99', emoji: '🐷' },
+  { id: 'qiuqiu', name: '球球', color: '#D3453B', soft: '#FBEBEA', dark: '#9C2E27', emoji: '🐮' },
 ];
 
 const COMMON_ITEMS = ['起床', '中晝頓', '歇晝', '收𨑨迌物仔', '暗頓', '洗身軀', '歇睏'];
@@ -1223,10 +1223,10 @@ function App() {
               <span className="nav-glyph">📊</span><span className="label">週統整</span>
             </button>
             <button className={`nav-btn${activeTab === 'bonus' ? ' active' : ''}`} onClick={() => setActiveTab('bonus')}>
-              <span className="nav-glyph">🪙</span><span className="label">加減分</span>
+              <span className="nav-glyph">✍</span><span className="label">加減分</span>
             </button>
             <button className={`nav-btn${activeTab === 'total' ? ' active' : ''}`} onClick={() => setActiveTab('total')}>
-              <span className="nav-glyph">🐷</span><span className="label">總分</span>
+              <span className="nav-glyph">🥇</span><span className="label">總分</span>
             </button>
           </div>
         </>
