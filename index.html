@@ -535,7 +535,9 @@ function GradeSheet({ open, itemLabel, dateStr, value, onSelect, onClose }) {
 function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange, onOverride, selectedDate, setSelectedDate }) {
   const dayType = getDayType(selectedDate, overrides);
   const specialItems = dayType === 'school' ? SCHOOL_ITEMS : HOLIDAY_ITEMS;
+  const safeDays = childData?.days || {};
   const day = childData.days[selectedDate] || { scores: {} };
+  const scores = day.scores || {};
 
   return (
     <div className="panel">
@@ -1083,12 +1085,16 @@ function App() {
 
   const handleScoreChange = (childId, dateStr, item, grade) => {
     setData((prev) => {
-      const childData = prev[childId];
-      const existingDay = childData.days[dateStr] || { scores: {}, recordedBy: whoAmI };
-      const newScores = { ...existingDay.scores };
+      const childData = prev[childId] || emptyChildData();
+      const safeDays = childData.days || {};
+      const existingDay = safeDays[dateStr] || { scores: {}, recordedBy: whoAmI };
+      const newScores = { ...(existingDay.scores || {}) };
+      
       if (grade) newScores[item] = grade; else delete newScores[item];
+      
       const newDay = { scores: newScores, recordedBy: whoAmI };
-      const newChildData = { ...childData, days: { ...childData.days, [dateStr]: newDay } };
+      const newChildData = { ...childData, days: { ...safeDays, [dateStr]: newDay } };
+      
       persistChild(childId, newChildData);
       return { ...prev, [childId]: newChildData };
     });
