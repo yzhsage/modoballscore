@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>多多 ＆ 球球 記分本</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    color: #2B2B26;
+    background-color: #FAFAF6;
+  }
+  .app-root {
+    background-color: #FAFAF6;
+    background-image:
+      linear-gradient(rgba(47,95,219,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(47,95,219,0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 84px;
+    position: relative;
+  }
+  .num { font-family: 'Space Grotesk', sans-serif; }
+
+  .header {
+    padding: 18px 18px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #2B2B26;
+    background: #FAFAF6;
+    position: sticky; top: 0; z-index: 5;
+  }
+  .header-title { font-size: 19px; font-weight: 700; letter-spacing: 0.5px; }
+  .header-title .b { color: #2F5FDB; }
+  .header-title .r { color: #D3453B; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .sync-dot { width: 9px; height: 9px; border-radius: 50%; background: #C9C7B8; flex-shrink: 0; }
+  .sync-dot.ok { background: #2F8F46; }
+  .sync-dot.error { background: #C23B3B; }
+  .sync-dot.connecting { background: #D98A29; }
+  .sync-error-banner { background: #FBEBEA; color: #9C2E27; font-size: 11.5px; font-weight: 600; padding: 8px 16px; text-align: center; }
+  .whoami { display: flex; gap: 4px; border: 1.5px solid #2B2B26; border-radius: 100px; padding: 2px; }
+  .whoami button {
+    border: none; background: transparent; padding: 5px 10px; border-radius: 100px;
+    font-size: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 600; cursor: pointer; color: #2B2B26;
+  }
+  .whoami button.active { background: #2B2B26; color: #fff; }
+
+  .panel { padding: 16px; }
+
+  .child-theme {
+    background: var(--accent-soft, transparent);
+    border-radius: 22px;
+    margin: 6px 10px 0;
+    padding: 2px 6px 10px;
+    transition: background .2s ease;
+  }
+  .child-theme .section-title { color: var(--accent-dark, #8B8A80); }
+  .child-theme .item-row { border-color: var(--accent, #E7E5D9); border-width: 1.5px; background: #fff; }
+  .child-theme .icon-btn { border-color: var(--accent, #2B2B26); color: var(--accent-dark, #2B2B26); background: #fff; }
+  .child-theme .today-btn { border-color: var(--accent, #2B2B26); color: var(--accent-dark, #2B2B26); background: #fff; }
+  .child-theme .add-btn { background: var(--accent, #2B2B26); }
+  .child-theme .row-label-cell { background: #fff; }
+  .child-theme .week-table-wrap { border-color: var(--accent, #E7E5D9); }
+  .child-theme .grid-cell { border-color: var(--accent-soft, #E7E5D9); }
+  .child-theme .date-nav-label { color: var(--accent-dark, #2B2B26); }
+  .child-theme .recorded-note { color: var(--accent-dark, #B0AE9F); opacity: .7; }
+
+  .child-switch { display: flex; gap: 12px; padding: 16px 16px 4px; }
+  .child-pill {
+    flex: 1; padding: 12px 0; border-radius: 18px; border: none; font-weight: 800; font-size: 15.5px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .child-emoji { font-size: 18px; }
+  .child-pill.duoduo { background: #fff; color: #2F5FDB; box-shadow: inset 0 0 0 2.5px #2F5FDB, 0 3px 0 #D8D6C9; }
+  .child-pill.qiuqiu { background: #fff; color: #D3453B; box-shadow: inset 0 0 0 2.5px #D3453B, 0 3px 0 #D8D6C9; }
+  .child-pill.active.duoduo { background: linear-gradient(135deg, #5B8AFF, #2947B0); color: #fff; box-shadow: 0 5px 0 #1F3480; transform: translateY(-2px); }
+  .child-pill.active.qiuqiu { background: linear-gradient(135deg, #FF7A6B, #B8352A); color: #fff; box-shadow: 0 5px 0 #7A1E17; transform: translateY(-2px); }
+  .child-pill:active { transform: translateY(2px) !important; box-shadow: 0 0 0 currentColor !important; }
+
+  .section-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: #8B8A80; margin: 20px 0 8px; font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .date-nav { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .date-nav-center { flex: 1; text-align: center; }
+  .date-nav-label { font-size: 15px; font-weight: 700; }
+  .date-nav-label .weekday { font-weight: 500; color: #8B8A80; font-size: 13px; }
+  .icon-btn { background: #fff; border: 1.5px solid #2B2B26; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; line-height: 1; }
+  .today-btn { border: 1.5px solid #2B2B26; background: #fff; border-radius: 100px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
+  .daytype-badge { margin-top: 4px; border: none; border-radius: 100px; padding: 3px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: 'Space Grotesk', sans-serif; }
+  .daytype-badge.school { background: #E4ECFB; color: #1F3F99; }
+  .daytype-badge.holiday { background: #FDEEDB; color: #9A6A1A; }
+  .daytype-editor { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+  .daytype-opt { border: 1.5px solid #D8D6C9; background: #fff; border-radius: 100px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
+  .daytype-opt.selected { border-color: #2B2B26; background: #2B2B26; color: #fff; }
+
+  .item-list { display: flex; flex-direction: column; gap: 10px; }
+  .item-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1.5px solid #E7E5D9; border-radius: 12px; padding: 10px 12px; }
+  .item-label { font-size: 14px; font-weight: 600; min-width: 62px; }
+
+  .grade-row { display: flex; gap: 5px; }
+  .grade-chip {
+    width: 36px; height: 40px; border-radius: 9px; border: 1.5px solid #E0DECF; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; color: #8B8A80;
+  }
+  .grade-letter { font-size: 14px; font-weight: 700; line-height: 1.1; }
+  .grade-pt { font-size: 9px; font-weight: 600; line-height: 1.1; }
+  .grade-chip.active.grade-A { background: #2F8F46; border-color: #2F8F46; color: #fff; }
+  .grade-chip.active.grade-B { background: #7FAE3B; border-color: #7FAE3B; color: #fff; }
+  .grade-chip.active.grade-C { background: #9B9B93; border-color: #9B9B93; color: #fff; }
+  .grade-chip.active.grade-D { background: #D98A29; border-color: #D98A29; color: #fff; }
+  .grade-chip.active.grade-E { background: #C23B3B; border-color: #C23B3B; color: #fff; }
+
+  .recorded-note { text-align: center; font-size: 11px; color: #B0AE9F; margin-top: 18px; font-family: 'Space Grotesk', sans-serif; }
+
+  .week-table-wrap { overflow-x: auto; border: 1.5px solid #E7E5D9; border-radius: 12px; background: #fff; }
+  .week-table { border-collapse: collapse; width: 100%; min-width: 460px; }
+  .week-table th, .week-table td { text-align: center; padding: 6px 4px; font-size: 11px; }
+  .week-table thead th { font-family: 'Space Grotesk', sans-serif; color: #8B8A80; font-weight: 600; border-bottom: 1.5px solid #E7E5D9; }
+  .th-date { font-size: 9px; color: #B0AE9F; }
+  .row-label-cell { text-align: left; font-size: 12px; font-weight: 600; padding-left: 10px; white-space: nowrap; position: sticky; left: 0; background: #fff; }
+  .grid-cell {
+    width: 34px; height: 30px; border-radius: 7px; border: 1.5px solid #E7E5D9; background: #FAFAF6;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12px; color: #B0AE9F; cursor: pointer;
+  }
+  .grid-cell.g-A { background: #2F8F46; border-color: #2F8F46; color: #fff; }
+  .grid-cell.g-B { background: #7FAE3B; border-color: #7FAE3B; color: #fff; }
+  .grid-cell.g-C { background: #9B9B93; border-color: #9B9B93; color: #fff; }
+  .grid-cell.g-D { background: #D98A29; border-color: #D98A29; color: #fff; }
+  .grid-cell.g-E { background: #C23B3B; border-color: #C23B3B; color: #fff; }
+  .grid-cell.disabled { background: repeating-linear-gradient(45deg, #F0EFE7, #F0EFE7 3px, #E7E5D9 3px, #E7E5D9 6px); border: none; width: 34px; height: 30px; display: inline-flex; align-items: center; justify-content: center; color: transparent; }
+
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(43,43,38,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 30; }
+  .sheet { background: #fff; width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 18px; }
+  .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .sheet-item { font-size: 16px; font-weight: 700; }
+  .sheet-date { font-size: 12px; color: #8B8A80; font-family: 'Space Grotesk', sans-serif; }
+  .sheet .grade-row { justify-content: space-between; }
+  .sheet .grade-chip { flex: 1; height: 52px; }
+
+  .summary-cards { display: flex; gap: 10px; margin-top: 6px; }
+  .summary-card { flex: 1; border: 2px solid; border-radius: 14px; padding: 14px 10px; background: #fff; text-align: center; }
+  .summary-card-head { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .summary-total { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; }
+  .summary-sub { font-size: 10px; color: #8B8A80; margin-top: 4px; font-family: 'Space Grotesk', sans-serif; }
+
+  .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .breakdown-list { display: flex; flex-direction: column; gap: 5px; }
+  .breakdown-row { display: flex; justify-content: space-between; font-size: 12.5px; background: #fff; border: 1px solid #E7E5D9; border-radius: 8px; padding: 6px 9px; }
+  .breakdown-row .pos, .bonus-mini-row .pos, .pos { color: #2F8F46; font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+  .breakdown-row .neg, .bonus-mini-row .neg, .neg { color: #C23B3B; font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+  .bonus-mini-list { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+  .bonus-mini-row { display: flex; justify-content: space-between; font-size: 11px; color: #6B6A60; }
+
+  .empty-note { font-size: 12.5px; color: #B0AE9F; padding: 14px 0; text-align: center; }
+
+  .trend-chart { background: #fff; border: 1.5px solid #E7E5D9; border-radius: 12px; padding: 8px 4px 4px; }
+  .trend-legend { display: flex; gap: 14px; justify-content: center; font-size: 11px; font-family: 'Space Grotesk', sans-serif; padding: 4px 0 2px; }
+  .trend-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .trend-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .trend-header-row { display: flex; align-items: center; justify-content: space-between; }
+  .item-select {
+    border: 1.5px solid #E0DECF; border-radius: 100px; padding: 5px 10px; font-size: 12px; font-weight: 700;
+    background: #fff; color: #2B2B26; font-family: inherit; margin-top: 18px;
+  }
+
+  .bonus-form { display: flex; flex-direction: column; gap: 8px; }
+  .input { border: 1.5px solid #E0DECF; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; font-family: inherit; background: #fff; }
+  .add-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: #2B2B26; color: #fff; border: none; border-radius: 10px; padding: 11px; font-weight: 700; font-size: 14px; cursor: pointer; }
+
+  .total-card { padding: 16px 10px; }
+  .savings-amount { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #2B2B26; margin-top: 8px; }
+  .settings-toggle { width: 100%; margin-top: 12px; background: #fff; border: 1.5px dashed #C9C7B8; border-radius: 10px; padding: 8px; font-size: 12px; font-weight: 700; color: #8B8A80; cursor: pointer; }
+  .settings-panel { background: #fff; border: 1.5px solid #E7E5D9; border-radius: 12px; padding: 10px 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; }
+  .settings-row .input.small { width: 84px; text-align: right; }
+  .convert-preview { font-size: 12.5px; color: #6B6A60; padding: 2px 2px; font-family: 'Space Grotesk', sans-serif; }
+  .form-error { font-size: 12px; color: #C23B3B; font-weight: 700; padding: 0 2px; }
+  .deduct-btn { background: #C23B3B; }
+  .bonus-list { display: flex; flex-direction: column; gap: 8px; }
+  .bonus-row { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1.5px solid #E7E5D9; border-radius: 12px; padding: 10px 12px; }
+  .bonus-reason { font-size: 13.5px; font-weight: 600; }
+  .bonus-meta { font-size: 10.5px; color: #B0AE9F; margin-top: 2px; font-family: 'Space Grotesk', sans-serif; }
+  .bonus-right { display: flex; align-items: center; gap: 8px; }
+  .big { font-size: 15px; }
+  .confirm-text { font-size: 10px; font-weight: 700; color: #C23B3B; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px; background: #fff; border-top: 2px solid #2B2B26;
+    display: flex; padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+    z-index: 10;
+  }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; padding: 6px 0; cursor: pointer; color: #B0AE9F; }
+  .nav-btn.active { color: #2B2B26; }
+  .nav-btn .nav-glyph { font-size: 19px; line-height: 1; }
+  .nav-btn span.label { font-size: 10.5px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+
+  .mode-toggle { display: flex; gap: 8px; padding: 0 16px 12px; }
+  .mode-btn { flex: 1; padding: 8px 0; border-radius: 9px; border: 1.5px solid #2B2B26; background: #fff; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+  .mode-btn.active { background: #2B2B26; color: #fff; }
+
+  .loading-screen { display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Space Grotesk', sans-serif; color: #8B8A80; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo } = React;
+
+/* ---------------------------------------------------------
+   雲端資料庫 (Firebase Realtime Database，免費方案)
+--------------------------------------------------------- */
+const FIREBASE_URL = 'https://modoballscore-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+async function dbGet(key, fallback) {
+  try {
+    const res = await fetch(`${FIREBASE_URL}/${key}.json`);
+    if (!res.ok) throw new Error('fetch failed');
+    const val = await res.json();
+    return val === null || val === undefined ? fallback : val;
+  } catch (e) {
+    console.error('dbGet error', key, e);
+    return { __error: true, fallback };
+  }
+}
+async function dbSet(key, value) {
+  try {
+    const res = await fetch(`${FIREBASE_URL}/${key}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(value),
+    });
+    if (!res.ok) throw new Error('write failed');
+    return true;
+  } catch (e) {
+    console.error('dbSet error', key, e);
+    return false;
+  }
+}
+
+/* ---------------------------------------------------------
+   待辦事項 (下個版本規劃)
+   1. 項目管理：讓爸媽可以在 App 內自行「新增／刪除」計分項目（不含改名）
+   2. 整週補登頁面加入視覺辨識功能：拍白板照片自動辨識帶入分數
+--------------------------------------------------------- */
+
+/* ---------------------------------------------------------
+   常數設定
+--------------------------------------------------------- */
+const CHILDREN = [
+  { id: 'duoduo', name: '多多', color: '#2F5FDB', soft: '#EAF0FE', dark: '#1F3F99', emoji: '🚀' },
+  { id: 'qiuqiu', name: '球球', color: '#D3453B', soft: '#FBEBEA', dark: '#9C2E27', emoji: '🔥' },
+];
+
+const COMMON_ITEMS = ['起床', '中晝頓', '歇晝', '收𨑨迌物仔', '暗頓', '洗身軀', '歇睏'];
+const SCHOOL_ITEMS = ['學校表現', '宿題', '收冊包'];
+const HOLIDAY_ITEMS = ['算術', '語言', '行為'];
+const SPECIAL_ITEMS = [...SCHOOL_ITEMS, ...HOLIDAY_ITEMS];
+const ALL_ITEMS_ORDER = [...COMMON_ITEMS, ...SPECIAL_ITEMS];
+
+const GRADES = [
+  { g: 'A', pt: 3 },
+  { g: 'B', pt: 1 },
+  { g: 'C', pt: 0 },
+  { g: 'D', pt: -1 },
+  { g: 'E', pt: -2 },
+];
+const GRADE_POINTS = GRADES.reduce((m, g) => ({ ...m, [g.g]: g.pt }), {});
+
+const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
+const STORAGE_KEYS = { duoduo: 'records-duoduo', qiuqiu: 'records-qiuqiu' };
+
+/* ---------------------------------------------------------
+   日期工具
+--------------------------------------------------------- */
+const pad = (n) => String(n).padStart(2, '0');
+const toDateStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseDateStr = (s) => new Date(s + 'T00:00:00');
+const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+const getMonday = (d) => { const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day; return addDays(d, diff); };
+const weekdayIdx = (d) => (d.getDay() + 6) % 7;
+
+function getDayType(dateStr, overrides) {
+  if (overrides[dateStr]) return overrides[dateStr];
+  const idx = weekdayIdx(parseDateStr(dateStr));
+  return idx >= 5 ? 'holiday' : 'school';
+}
+function itemsForDayType(type) {
+  return type === 'school' ? [...COMMON_ITEMS, ...SCHOOL_ITEMS] : [...COMMON_ITEMS, ...HOLIDAY_ITEMS];
+}
+function getWeekDateStrs(mondayStr) {
+  const m = parseDateStr(mondayStr);
+  return Array.from({ length: 7 }, (_, i) => toDateStr(addDays(m, i)));
+}
+function dateLabel(dateStr) {
+  const d = parseDateStr(dateStr);
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+/* ---------------------------------------------------------
+   計分工具
+--------------------------------------------------------- */
+function emptyChildData() { return { days: {}, bonuses: [], deductions: [] }; }
+
+function allTimeTotalForChild(childData, base) {
+  let itemScore = 0;
+  Object.values(childData.days || {}).forEach((day) => {
+    Object.values(day.scores || {}).forEach((grade) => {
+      const pt = GRADE_POINTS[grade];
+      if (pt !== undefined) itemScore += pt;
+    });
+  });
+  const bonusScore = (childData.bonuses || []).reduce((s, b) => s + Number(b.points || 0), 0);
+  const deductionScore = (childData.deductions || []).reduce((s, d) => s + Number(d.points || 0), 0);
+  const total = (base || 0) + itemScore + bonusScore - deductionScore;
+  return { itemScore, bonusScore, deductionScore, total };
+}
+
+function weekTotalForChild(childData, mondayStr) {
+  const dateStrs = getWeekDateStrs(mondayStr);
+  let dailyTotal = 0;
+  const itemTotals = {};
+  dateStrs.forEach((ds) => {
+    const day = childData.days[ds];
+    if (!day) return;
+    Object.entries(day.scores || {}).forEach(([item, grade]) => {
+      const pt = GRADE_POINTS[grade];
+      if (pt === undefined) return;
+      dailyTotal += pt;
+      itemTotals[item] = (itemTotals[item] || 0) + pt;
+    });
+  });
+  const bonusEntries = (childData.bonuses || []).filter((b) => dateStrs.includes(b.date));
+  const bonusTotal = bonusEntries.reduce((s, b) => s + Number(b.points || 0), 0);
+  return { dailyTotal, itemTotals, bonusTotal, bonusEntries: bonusEntries.sort((a,b)=>b.date.localeCompare(a.date)), grandTotal: dailyTotal + bonusTotal };
+}
+
+function itemWeekTotal(childData, mondayStr, item) {
+  const dateStrs = getWeekDateStrs(mondayStr);
+  let total = 0;
+  dateStrs.forEach((ds) => {
+    const grade = childData.days[ds]?.scores?.[item];
+    const pt = GRADE_POINTS[grade];
+    if (pt !== undefined) total += pt;
+  });
+  return total;
+}
+
+/* ---------------------------------------------------------
+   簡易 SVG 折線圖 (取代 recharts，純手刻無外部依賴)
+--------------------------------------------------------- */
+function MiniLineChart({ data, seriesKeys, colors, height = 200 }) {
+  const width = 600;
+  const padding = { top: 12, right: 14, bottom: 24, left: 8 };
+  const values = data.flatMap((d) => seriesKeys.map((k) => Number(d[k]) || 0));
+  let minV = Math.min(0, ...values);
+  let maxV = Math.max(1, ...values);
+  if (minV === maxV) { minV -= 1; maxV += 1; }
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+  const xStep = data.length > 1 ? innerW / (data.length - 1) : 0;
+  const xScale = (i) => padding.left + i * xStep;
+  const yScale = (v) => padding.top + innerH - ((v - minV) / (maxV - minV || 1)) * innerH;
+  const showEvery = Math.max(1, Math.ceil(data.length / 6));
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height, display: 'block' }}>
+      {minV < 0 && maxV > 0 && (
+        <line x1={padding.left} x2={width - padding.right} y1={yScale(0)} y2={yScale(0)} stroke="#D8D6C9" strokeDasharray="3 3" />
+      )}
+      {seriesKeys.map((k, si) => {
+        const points = data.map((d, i) => `${xScale(i)},${yScale(Number(d[k]) || 0)}`).join(' ');
+        return (
+          <g key={k}>
+            <polyline points={points} fill="none" stroke={colors[si]} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+            {data.map((d, i) => (
+              <circle key={i} cx={xScale(i)} cy={yScale(Number(d[k]) || 0)} r="3" fill={colors[si]} />
+            ))}
+          </g>
+        );
+      })}
+      {data.map((d, i) => (
+        (i % showEvery === 0 || i === data.length - 1) && (
+          <text key={i} x={xScale(i)} y={height - 6} fontSize="10" textAnchor="middle" fill="#B8B6AA" fontFamily="Space Grotesk, sans-serif">{d.label}</text>
+        )
+      ))}
+    </svg>
+  );
+}
+function ChartLegend({ items }) {
+  return (
+    <div className="trend-legend">
+      {items.map((it) => (
+        <span key={it.label}><i style={{ background: it.color }} />{it.label}</span>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   小元件
+--------------------------------------------------------- */
+function GradeChips({ value, onChange }) {
+  return (
+    <div className="grade-row">
+      {GRADES.map((g) => (
+        <button
+          key={g.g}
+          type="button"
+          className={`grade-chip grade-${g.g}${value === g.g ? ' active' : ''}`}
+          onClick={() => onChange(value === g.g ? null : g.g)}
+        >
+          <span className="grade-letter">{g.g}</span>
+          <span className="grade-pt">{g.pt > 0 ? `+${g.pt}` : g.pt}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ChildSwitch({ activeId, onChange }) {
+  return (
+    <div className="child-switch">
+      {CHILDREN.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          className={`child-pill ${c.id}${activeId === c.id ? ' active' : ''}`}
+          onClick={() => onChange(c.id)}
+        >
+          <span className="child-emoji">{c.emoji}</span>{c.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function DateNav({ dateStr, onPrev, onNext, onToday, dayType, overrideActive, onSetOverride }) {
+  const [editing, setEditing] = useState(false);
+  const d = parseDateStr(dateStr);
+  return (
+    <div className="date-nav">
+      <button className="icon-btn" onClick={onPrev}>‹</button>
+      <div className="date-nav-center">
+        <div className="date-nav-label">{d.getMonth() + 1}月{d.getDate()}日 <span className="weekday">週{WEEKDAY_LABELS[weekdayIdx(d)]}</span></div>
+        {!editing ? (
+          <button className={`daytype-badge ${dayType}`} onClick={() => setEditing(true)}>
+            {dayType === 'school' ? '上學日' : '假日'} ✎
+          </button>
+        ) : (
+          <div className="daytype-editor">
+            {[['auto', '自動'], ['school', '上學日'], ['holiday', '假日']].map(([val, label]) => (
+              <button
+                key={val}
+                className={`daytype-opt${(val === 'auto' && !overrideActive) || val === (overrideActive || '') ? ' selected' : ''}`}
+                onClick={() => { onSetOverride(val); setEditing(false); }}
+              >{label}</button>
+            ))}
+          </div>
+        )}
+      </div>
+      <button className="icon-btn" onClick={onNext}>›</button>
+      <button className="today-btn" onClick={onToday}>今天</button>
+    </div>
+  );
+}
+
+function WeekNav({ mondayStr, onPrev, onNext, onThisWeek }) {
+  const dates = getWeekDateStrs(mondayStr);
+  const start = parseDateStr(dates[0]);
+  const end = parseDateStr(dates[6]);
+  return (
+    <div className="date-nav">
+      <button className="icon-btn" onClick={onPrev}>‹</button>
+      <div className="date-nav-center">
+        <div className="date-nav-label">{start.getMonth() + 1}/{start.getDate()} - {end.getMonth() + 1}/{end.getDate()}</div>
+      </div>
+      <button className="icon-btn" onClick={onNext}>›</button>
+      <button className="today-btn" onClick={onThisWeek}>本週</button>
+    </div>
+  );
+}
+
+function GradeSheet({ open, itemLabel, dateStr, value, onSelect, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-header">
+          <div>
+            <div className="sheet-item">{itemLabel}</div>
+            <div className="sheet-date">{dateLabel(dateStr)}</div>
+          </div>
+          <button className="icon-btn" onClick={onClose}>✕</button>
+        </div>
+        <GradeChips value={value} onChange={(g) => { onSelect(g); }} />
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   單日紀錄畫面
+--------------------------------------------------------- */
+function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange, onOverride, selectedDate, setSelectedDate }) {
+  const dayType = getDayType(selectedDate, overrides);
+  const specialItems = dayType === 'school' ? SCHOOL_ITEMS : HOLIDAY_ITEMS;
+  const day = childData.days[selectedDate] || { scores: {} };
+
+  return (
+    <div className="panel">
+      <DateNav
+        dateStr={selectedDate}
+        onPrev={() => setSelectedDate(toDateStr(addDays(parseDateStr(selectedDate), -1)))}
+        onNext={() => setSelectedDate(toDateStr(addDays(parseDateStr(selectedDate), 1)))}
+        onToday={() => setSelectedDate(toDateStr(new Date()))}
+        dayType={dayType}
+        overrideActive={overrides[selectedDate]}
+        onSetOverride={(val) => onOverride(selectedDate, val)}
+      />
+
+      <div className="section-title">共同</div>
+      <div className="item-list">
+        {COMMON_ITEMS.map((item) => (
+          <div className="item-row" key={item}>
+            <div className="item-label">{item}</div>
+            <GradeChips value={day.scores[item] || null} onChange={(g) => onScoreChange(childId, selectedDate, item, g)} />
+          </div>
+        ))}
+      </div>
+
+      <div className="section-title">{dayType === 'school' ? '上課日' : '假日'}</div>
+      <div className="item-list">
+        {specialItems.map((item) => (
+          <div className="item-row" key={item}>
+            <div className="item-label">{item}</div>
+            <GradeChips value={day.scores[item] || null} onChange={(g) => onScoreChange(childId, selectedDate, item, g)} />
+          </div>
+        ))}
+      </div>
+      <div className="recorded-note">由 {day.recordedBy || whoAmI} 紀錄・即時同步</div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   整週補登畫面
+--------------------------------------------------------- */
+function WeekCatchUpView({ childId, childData, overrides, onScoreChange, weekMonday, setWeekMonday }) {
+  const dateStrs = getWeekDateStrs(weekMonday);
+  const [sheet, setSheet] = useState(null);
+
+  const cellValue = (item, ds) => (childData.days[ds]?.scores || {})[item] || null;
+
+  return (
+    <div className="panel">
+      <WeekNav
+        mondayStr={weekMonday}
+        onPrev={() => setWeekMonday(toDateStr(addDays(parseDateStr(weekMonday), -7)))}
+        onNext={() => setWeekMonday(toDateStr(addDays(parseDateStr(weekMonday), 7)))}
+        onThisWeek={() => setWeekMonday(toDateStr(getMonday(new Date())))}
+      />
+
+      <div className="section-title">共同</div>
+      <div className="week-table-wrap">
+        <table className="week-table">
+          <thead>
+            <tr>
+              <th className="row-label-cell"></th>
+              {dateStrs.map((ds) => {
+                const d = parseDateStr(ds);
+                return <th key={ds}>週{WEEKDAY_LABELS[weekdayIdx(d)]}<br /><span className="th-date">{d.getMonth() + 1}/{d.getDate()}</span></th>;
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {COMMON_ITEMS.map((item) => (
+              <tr key={item}>
+                <td className="row-label-cell">{item}</td>
+                {dateStrs.map((ds) => {
+                  const v = cellValue(item, ds);
+                  return (
+                    <td key={ds}>
+                      <button className={`grid-cell${v ? ` g-${v}` : ''}`} onClick={() => setSheet({ item, dateStr: ds })}>{v || '－'}</button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="section-title">當日特別項目</div>
+      <div className="week-table-wrap">
+        <table className="week-table">
+          <thead>
+            <tr>
+              <th className="row-label-cell"></th>
+              {dateStrs.map((ds) => {
+                const d = parseDateStr(ds);
+                return <th key={ds}>週{WEEKDAY_LABELS[weekdayIdx(d)]}<br /><span className="th-date">{d.getMonth() + 1}/{d.getDate()}</span></th>;
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {SPECIAL_ITEMS.map((item) => (
+              <tr key={item}>
+                <td className="row-label-cell">{item}</td>
+                {dateStrs.map((ds) => {
+                  const dt = getDayType(ds, overrides);
+                  const applicable = itemsForDayType(dt).includes(item);
+                  const v = cellValue(item, ds);
+                  return (
+                    <td key={ds}>
+                      {applicable ? (
+                        <button className={`grid-cell${v ? ` g-${v}` : ''}`} onClick={() => setSheet({ item, dateStr: ds })}>{v || '－'}</button>
+                      ) : (
+                        <div className="grid-cell disabled">·</div>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <GradeSheet
+        open={!!sheet}
+        itemLabel={sheet?.item}
+        dateStr={sheet?.dateStr}
+        value={sheet ? cellValue(sheet.item, sheet.dateStr) : null}
+        onSelect={(g) => { onScoreChange(childId, sheet.dateStr, sheet.item, g); setSheet(null); }}
+        onClose={() => setSheet(null)}
+      />
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   週統整畫面
+--------------------------------------------------------- */
+function SummaryCard({ child, totals }) {
+  return (
+    <div className="summary-card" style={{ borderColor: child.color }}>
+      <div className="summary-card-head" style={{ color: child.color }}>{child.name}</div>
+      <div className="summary-total" style={{ color: child.color }}>{totals.grandTotal > 0 ? `+${totals.grandTotal}` : totals.grandTotal}</div>
+      <div className="summary-sub">每日 {totals.dailyTotal >= 0 ? `+${totals.dailyTotal}` : totals.dailyTotal}　加減分 {totals.bonusTotal >= 0 ? `+${totals.bonusTotal}` : totals.bonusTotal}</div>
+    </div>
+  );
+}
+
+function BreakdownList({ totals }) {
+  const rows = ALL_ITEMS_ORDER.filter((item) => Object.prototype.hasOwnProperty.call(totals.itemTotals, item));
+  if (rows.length === 0) return <div className="empty-note">這週還沒有項目紀錄</div>;
+  return (
+    <div className="breakdown-list">
+      {rows.map((item) => {
+        const v = totals.itemTotals[item];
+        return (
+          <div className="breakdown-row" key={item}>
+            <span>{item}</span>
+            <span className={v > 0 ? 'pos' : v < 0 ? 'neg' : ''}>{v > 0 ? `+${v}` : v}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SummaryView({ data, overrides, weekMonday, setWeekMonday }) {
+  const totalsDD = useMemo(() => weekTotalForChild(data.duoduo, weekMonday), [data.duoduo, weekMonday]);
+  const totalsQQ = useMemo(() => weekTotalForChild(data.qiuqiu, weekMonday), [data.qiuqiu, weekMonday]);
+  const [trendItem, setTrendItem] = useState(COMMON_ITEMS[0]);
+
+  const trendData = useMemo(() => {
+    const monday = parseDateStr(weekMonday);
+    const arr = [];
+    for (let i = 7; i >= 0; i--) {
+      const m = addDays(monday, -7 * i);
+      const mStr = toDateStr(m);
+      const dd = weekTotalForChild(data.duoduo, mStr);
+      const qq = weekTotalForChild(data.qiuqiu, mStr);
+      arr.push({ label: `${m.getMonth() + 1}/${m.getDate()}`, 多多: dd.grandTotal, 球球: qq.grandTotal });
+    }
+    return arr;
+  }, [data, weekMonday]);
+
+  const itemTrendData = useMemo(() => {
+    const monday = parseDateStr(weekMonday);
+    const arr = [];
+    for (let i = 7; i >= 0; i--) {
+      const m = addDays(monday, -7 * i);
+      const mStr = toDateStr(m);
+      const dd = itemWeekTotal(data.duoduo, mStr, trendItem);
+      const qq = itemWeekTotal(data.qiuqiu, mStr, trendItem);
+      arr.push({ label: `${m.getMonth() + 1}/${m.getDate()}`, 多多: dd, 球球: qq });
+    }
+    return arr;
+  }, [data, weekMonday, trendItem]);
+
+  return (
+    <div className="panel">
+      <WeekNav
+        mondayStr={weekMonday}
+        onPrev={() => setWeekMonday(toDateStr(addDays(parseDateStr(weekMonday), -7)))}
+        onNext={() => setWeekMonday(toDateStr(addDays(parseDateStr(weekMonday), 7)))}
+        onThisWeek={() => setWeekMonday(toDateStr(getMonday(new Date())))}
+      />
+
+      <div className="summary-cards">
+        <SummaryCard child={CHILDREN[0]} totals={totalsDD} />
+        <SummaryCard child={CHILDREN[1]} totals={totalsQQ} />
+      </div>
+
+      <div className="breakdown-grid">
+        <div>
+          <div className="section-title" style={{ color: CHILDREN[0].color }}>多多細項</div>
+          <BreakdownList totals={totalsDD} />
+          {totalsDD.bonusEntries.length > 0 && (
+            <div className="bonus-mini-list">
+              {totalsDD.bonusEntries.map((b) => (
+                <div key={b.id} className="bonus-mini-row"><span>{dateLabel(b.date)}・{b.reason}</span><span className={b.points >= 0 ? 'pos' : 'neg'}>{b.points >= 0 ? `+${b.points}` : b.points}</span></div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="section-title" style={{ color: CHILDREN[1].color }}>球球細項</div>
+          <BreakdownList totals={totalsQQ} />
+          {totalsQQ.bonusEntries.length > 0 && (
+            <div className="bonus-mini-list">
+              {totalsQQ.bonusEntries.map((b) => (
+                <div key={b.id} className="bonus-mini-row"><span>{dateLabel(b.date)}・{b.reason}</span><span className={b.points >= 0 ? 'pos' : 'neg'}>{b.points >= 0 ? `+${b.points}` : b.points}</span></div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="section-title">近八週趨勢</div>
+      <div className="trend-chart">
+        <MiniLineChart data={trendData} seriesKeys={['多多', '球球']} colors={[CHILDREN[0].color, CHILDREN[1].color]} height={200} />
+      </div>
+      <ChartLegend items={[{ label: '多多', color: CHILDREN[0].color }, { label: '球球', color: CHILDREN[1].color }]} />
+
+      <div className="trend-header-row">
+        <div className="section-title" style={{ margin: '20px 0 0' }}>細項趨勢</div>
+        <select className="item-select" value={trendItem} onChange={(e) => setTrendItem(e.target.value)}>
+          <optgroup label="共同">
+            {COMMON_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
+          </optgroup>
+          <optgroup label="上課日">
+            {SCHOOL_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
+          </optgroup>
+          <optgroup label="假日">
+            {HOLIDAY_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
+          </optgroup>
+        </select>
+      </div>
+      <div className="trend-chart" style={{ marginTop: 8 }}>
+        <MiniLineChart data={itemTrendData} seriesKeys={['多多', '球球']} colors={[CHILDREN[0].color, CHILDREN[1].color]} height={180} />
+      </div>
+      <ChartLegend items={[{ label: '多多', color: CHILDREN[0].color }, { label: '球球', color: CHILDREN[1].color }]} />
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   加減分畫面
+--------------------------------------------------------- */
+function BonusView({ childId, childData, whoAmI, onAdd, onDelete }) {
+  const [date, setDate] = useState(toDateStr(new Date()));
+  const [points, setPoints] = useState('');
+  const [reason, setReason] = useState('');
+  const [confirmId, setConfirmId] = useState(null);
+  const [formError, setFormError] = useState('');
+
+  const submit = () => {
+    const n = Number(points);
+    if (!points || n === 0) { setFormError('請輸入不為 0 的分數'); return; }
+    if (!reason.trim()) { setFormError('請填寫原因'); return; }
+    setFormError('');
+    onAdd(childId, { date, points: n, reason: reason.trim() });
+    setPoints('');
+    setReason('');
+  };
+
+  const sorted = [...(childData.bonuses || [])].sort((a, b) => b.date.localeCompare(a.date));
+
+  return (
+    <div className="panel">
+      <div className="section-title">新增加減分</div>
+      <div className="bonus-form">
+        <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+        <input type="number" className="input small" placeholder="分數 (可負)" value={points} onChange={(e) => setPoints(e.target.value)} />
+        <input type="text" className="input" placeholder="原因，例如：幫忙洗碗" value={reason} onChange={(e) => setReason(e.target.value)} />
+        {formError && <div className="form-error">{formError}</div>}
+        <button className="add-btn" onClick={submit}>＋ 新增</button>
+      </div>
+
+      <div className="section-title">歷史紀錄</div>
+      {sorted.length === 0 ? (
+        <div className="empty-note">還沒有加減分紀錄</div>
+      ) : (
+        <div className="bonus-list">
+          {sorted.map((b) => (
+            <div className="bonus-row" key={b.id}>
+              <div>
+                <div className="bonus-reason">{b.reason}</div>
+                <div className="bonus-meta">{dateLabel(b.date)}・{b.recordedBy}</div>
+              </div>
+              <div className="bonus-right">
+                <span className={b.points >= 0 ? 'pos big' : 'neg big'}>{b.points >= 0 ? `+${b.points}` : b.points}</span>
+                <button className="icon-btn" onClick={() => {
+                  if (confirmId === b.id) { onDelete(childId, b.id); setConfirmId(null); }
+                  else setConfirmId(b.id);
+                }}>
+                  {confirmId === b.id ? <span className="confirm-text">確定?</span> : '🗑'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   總分／存款／扣點畫面
+--------------------------------------------------------- */
+function TotalCard({ child, stats, exchangeRate }) {
+  return (
+    <div className="summary-card total-card" style={{ borderColor: child.color }}>
+      <div className="summary-card-head" style={{ color: child.color }}>{child.emoji} {child.name}</div>
+      <div className="summary-total" style={{ color: child.color }}>{stats.total.toLocaleString()}</div>
+      <div className="summary-sub">總分</div>
+      <div className="savings-amount">${(stats.total * exchangeRate).toLocaleString()}</div>
+      <div className="summary-sub">存款（總分 × {exchangeRate}）</div>
+    </div>
+  );
+}
+
+function TotalView({
+  data, baseScores, exchangeRate, onBaseScoreChange, onExchangeRateChange,
+  activeChild, setActiveChild, onAddDeduction, onDeleteDeduction,
+}) {
+  const [showSettings, setShowSettings] = useState(false);
+  const [mode, setMode] = useState('points');
+  const [date, setDate] = useState(toDateStr(new Date()));
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+  const [confirmId, setConfirmId] = useState(null);
+  const [formError, setFormError] = useState('');
+
+  const statsDD = allTimeTotalForChild(data.duoduo, Number(baseScores.duoduo) || 0);
+  const statsQQ = allTimeTotalForChild(data.qiuqiu, Number(baseScores.qiuqiu) || 0);
+  const activeChildData = data[activeChild];
+
+  const computedPoints = mode === 'money'
+    ? Math.ceil((Number(amount) || 0) / (Number(exchangeRate) || 1))
+    : Math.ceil(Number(amount) || 0);
+
+  const submit = () => {
+    if (!amount || Number(amount) <= 0) { setFormError('請先輸入大於 0 的數字'); return; }
+    if (!reason.trim()) { setFormError('請填寫扣點原因'); return; }
+    if (computedPoints <= 0) { setFormError('計算出的扣點數必須大於 0'); return; }
+    setFormError('');
+    onAddDeduction(activeChild, {
+      date, points: computedPoints, reason: reason.trim(), mode,
+      moneyAmount: mode === 'money' ? Number(amount) : null,
+    });
+    setAmount('');
+    setReason('');
+  };
+
+  const sortedDeductions = [...(activeChildData.deductions || [])].sort((a, b) => b.date.localeCompare(a.date));
+
+  return (
+    <div className="panel">
+      <div className="summary-cards">
+        <TotalCard child={CHILDREN[0]} stats={statsDD} exchangeRate={Number(exchangeRate) || 0} />
+        <TotalCard child={CHILDREN[1]} stats={statsQQ} exchangeRate={Number(exchangeRate) || 0} />
+      </div>
+
+      <button className="settings-toggle" onClick={() => setShowSettings((v) => !v)}>
+        {showSettings ? '收起設定' : '調整匯率／起始總分'}
+      </button>
+      {showSettings && (
+        <div className="settings-panel">
+          <div className="settings-row">
+            <span>匯率（1點 = $）</span>
+            <input className="input small" type="number" value={exchangeRate} onChange={(e) => onExchangeRateChange(e.target.value)} />
+          </div>
+          {CHILDREN.map((c) => (
+            <div className="settings-row" key={c.id}>
+              <span>{c.emoji} {c.name} 起始總分</span>
+              <input className="input small" type="number" value={baseScores[c.id]} onChange={(e) => onBaseScoreChange(c.id, e.target.value)} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="section-title">扣點 / 扣錢</div>
+      <ChildSwitch activeId={activeChild} onChange={setActiveChild} />
+
+      <div className="mode-toggle" style={{ padding: '12px 0 0' }}>
+        <button className={`mode-btn${mode === 'points' ? ' active' : ''}`} onClick={() => setMode('points')}>直接扣點</button>
+        <button className={`mode-btn${mode === 'money' ? ' active' : ''}`} onClick={() => setMode('money')}>用金額換算</button>
+      </div>
+
+      <div className="bonus-form" style={{ marginTop: 10 }}>
+        <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+        <input type="number" className="input" placeholder={mode === 'points' ? '扣除點數' : '金額 $'} value={amount} onChange={(e) => setAmount(e.target.value)} />
+        {mode === 'money' && amount ? (
+          <div className="convert-preview">= 扣 <b>{computedPoints}</b> 點（無條件進位）</div>
+        ) : null}
+        <input type="text" className="input" placeholder="原因，例如：換零用錢 / 做壞事" value={reason} onChange={(e) => setReason(e.target.value)} />
+        {formError && <div className="form-error">{formError}</div>}
+        <button className="add-btn deduct-btn" onClick={submit}>＋ 確認扣點</button>
+      </div>
+
+      <div className="section-title">扣點紀錄</div>
+      {sortedDeductions.length === 0 ? (
+        <div className="empty-note">還沒有扣點紀錄</div>
+      ) : (
+        <div className="bonus-list">
+          {sortedDeductions.map((d) => (
+            <div className="bonus-row" key={d.id}>
+              <div>
+                <div className="bonus-reason">{d.reason}</div>
+                <div className="bonus-meta">{dateLabel(d.date)}・{d.recordedBy}{d.mode === 'money' ? `・$${d.moneyAmount}` : ''}</div>
+              </div>
+              <div className="bonus-right">
+                <span className="neg big">-{d.points}</span>
+                <button className="icon-btn" onClick={() => {
+                  if (confirmId === d.id) { onDeleteDeduction(activeChild, d.id); setConfirmId(null); }
+                  else setConfirmId(d.id);
+                }}>
+                  {confirmId === d.id ? <span className="confirm-text">確定?</span> : '🗑'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   主程式
+--------------------------------------------------------- */
+function App() {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({ duoduo: emptyChildData(), qiuqiu: emptyChildData() });
+  const [overrides, setOverrides] = useState({});
+  const [whoAmI, setWhoAmI] = useState('爸爸');
+  const [syncStatus, setSyncStatus] = useState('connecting');
+
+  const [activeTab, setActiveTab] = useState('daily');
+  const [dailyMode, setDailyMode] = useState('single');
+  const [activeChild, setActiveChild] = useState('duoduo');
+  const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()));
+  const [weekMonday, setWeekMonday] = useState(toDateStr(getMonday(new Date())));
+  const [baseScores, setBaseScores] = useState({ duoduo: 0, qiuqiu: 0 });
+  const [exchangeRate, setExchangeRate] = useState(5);
+
+  const fetchAll = async (isInitial) => {
+    const [dd, qq, ov, base, rate] = await Promise.all([
+      dbGet('records-duoduo', emptyChildData()),
+      dbGet('records-qiuqiu', emptyChildData()),
+      dbGet('daytype-overrides', {}),
+      dbGet('settings-base-score', { duoduo: 0, qiuqiu: 0 }),
+      dbGet('settings-exchange-rate', 5),
+    ]);
+    const anyError = [dd, qq, ov, base, rate].some((r) => r && r.__error);
+    setSyncStatus(anyError ? 'error' : 'ok');
+    setData({
+      duoduo: { ...emptyChildData(), ...(dd && dd.__error ? dd.fallback : dd) },
+      qiuqiu: { ...emptyChildData(), ...(qq && qq.__error ? qq.fallback : qq) },
+    });
+    setOverrides(ov && ov.__error ? ov.fallback : ov);
+    setBaseScores(base && base.__error ? base.fallback : base);
+    setExchangeRate(rate && rate.__error ? rate.fallback : rate);
+    if (isInitial) setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAll(true);
+    const interval = setInterval(() => fetchAll(false), 15000);
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll(false); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, []);
+
+  const persistChild = async (childId, newChildData) => {
+    const ok = await dbSet(STORAGE_KEYS[childId], newChildData);
+    setSyncStatus(ok ? 'ok' : 'error');
+  };
+  const persistOverrides = async (next) => {
+    const ok = await dbSet('daytype-overrides', next);
+    setSyncStatus(ok ? 'ok' : 'error');
+  };
+  const persistBaseScores = async (next) => {
+    const ok = await dbSet('settings-base-score', next);
+    setSyncStatus(ok ? 'ok' : 'error');
+  };
+  const persistExchangeRate = async (v) => {
+    const ok = await dbSet('settings-exchange-rate', v);
+    setSyncStatus(ok ? 'ok' : 'error');
+  };
+
+  const handleBaseScoreChange = (childId, value) => {
+    setBaseScores((prev) => {
+      const next = { ...prev, [childId]: value === '' ? 0 : Number(value) };
+      persistBaseScores(next);
+      return next;
+    });
+  };
+  const handleExchangeRateChange = (value) => {
+    const v = value === '' ? 0 : Number(value);
+    setExchangeRate(v);
+    persistExchangeRate(v);
+  };
+
+  const handleAddDeduction = (childId, entry) => {
+    setData((prev) => {
+      const childData = prev[childId];
+      const newDeduction = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry, recordedBy: whoAmI };
+      const newChildData = { ...childData, deductions: [newDeduction, ...(childData.deductions || [])] };
+      persistChild(childId, newChildData);
+      return { ...prev, [childId]: newChildData };
+    });
+  };
+  const handleDeleteDeduction = (childId, id) => {
+    setData((prev) => {
+      const childData = prev[childId];
+      const newChildData = { ...childData, deductions: (childData.deductions || []).filter((d) => d.id !== id) };
+      persistChild(childId, newChildData);
+      return { ...prev, [childId]: newChildData };
+    });
+  };
+
+  const handleScoreChange = (childId, dateStr, item, grade) => {
+    setData((prev) => {
+      const childData = prev[childId];
+      const existingDay = childData.days[dateStr] || { scores: {}, recordedBy: whoAmI };
+      const newScores = { ...existingDay.scores };
+      if (grade) newScores[item] = grade; else delete newScores[item];
+      const newDay = { scores: newScores, recordedBy: whoAmI };
+      const newChildData = { ...childData, days: { ...childData.days, [dateStr]: newDay } };
+      persistChild(childId, newChildData);
+      return { ...prev, [childId]: newChildData };
+    });
+  };
+
+  const handleOverride = (dateStr, val) => {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      if (val === 'auto') delete next[dateStr]; else next[dateStr] = val;
+      persistOverrides(next);
+      return next;
+    });
+  };
+
+  const handleAddBonus = (childId, entry) => {
+    setData((prev) => {
+      const childData = prev[childId];
+      const newBonus = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry, recordedBy: whoAmI };
+      const newChildData = { ...childData, bonuses: [newBonus, ...childData.bonuses] };
+      persistChild(childId, newChildData);
+      return { ...prev, [childId]: newChildData };
+    });
+  };
+  const handleDeleteBonus = (childId, id) => {
+    setData((prev) => {
+      const childData = prev[childId];
+      const newChildData = { ...childData, bonuses: childData.bonuses.filter((b) => b.id !== id) };
+      persistChild(childId, newChildData);
+      return { ...prev, [childId]: newChildData };
+    });
+  };
+
+  const handleWhoAmI = (v) => { setWhoAmI(v); };
+
+  const activeChildMeta = CHILDREN.find((c) => c.id === activeChild);
+
+  return (
+    <div className="app-root">
+      {loading ? (
+        <div className="loading-screen">載入中...</div>
+      ) : (
+        <>
+          <div className="header">
+            <div className="header-title"><span className="b">多多</span> ＆ <span className="r">球球</span> 記分本</div>
+            <div className="header-right">
+              <div className={`sync-dot ${syncStatus}`} title={syncStatus === 'ok' ? '雲端同步正常' : syncStatus === 'error' ? '無法連線雲端資料庫' : '連線中...'} />
+              <div className="whoami">
+                {['爸爸', '媽媽'].map((w) => (
+                  <button key={w} className={whoAmI === w ? 'active' : ''} onClick={() => handleWhoAmI(w)}>{w}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          {syncStatus === 'error' && (
+            <div className="sync-error-banner">⚠️ 無法連線到雲端資料庫，資料可能沒有同步，請檢查 Firebase 網址與規則設定</div>
+          )}
+
+          {activeTab === 'daily' && (
+            <>
+              <ChildSwitch activeId={activeChild} onChange={setActiveChild} />
+              <div className="mode-toggle">
+                <button className={`mode-btn${dailyMode === 'single' ? ' active' : ''}`} onClick={() => setDailyMode('single')}>單日紀錄</button>
+                <button className={`mode-btn${dailyMode === 'week' ? ' active' : ''}`} onClick={() => setDailyMode('week')}>整週補登</button>
+              </div>
+              <div
+                className={`child-theme ${activeChild}`}
+                style={{ '--accent': activeChildMeta.color, '--accent-soft': activeChildMeta.soft, '--accent-dark': activeChildMeta.dark }}
+              >
+                {dailyMode === 'single' ? (
+                  <DailyRecordView
+                    childId={activeChild}
+                    childData={data[activeChild]}
+                    overrides={overrides}
+                    whoAmI={whoAmI}
+                    onScoreChange={handleScoreChange}
+                    onOverride={handleOverride}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                  />
+                ) : (
+                  <WeekCatchUpView
+                    childId={activeChild}
+                    childData={data[activeChild]}
+                    overrides={overrides}
+                    onScoreChange={handleScoreChange}
+                    weekMonday={weekMonday}
+                    setWeekMonday={setWeekMonday}
+                  />
+                )}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'summary' && (
+            <SummaryView data={data} overrides={overrides} weekMonday={weekMonday} setWeekMonday={setWeekMonday} />
+          )}
+
+          {activeTab === 'bonus' && (
+            <>
+              <ChildSwitch activeId={activeChild} onChange={setActiveChild} />
+              <div
+                className={`child-theme ${activeChild}`}
+                style={{ '--accent': activeChildMeta.color, '--accent-soft': activeChildMeta.soft, '--accent-dark': activeChildMeta.dark }}
+              >
+                <BonusView
+                  childId={activeChild}
+                  childData={data[activeChild]}
+                  whoAmI={whoAmI}
+                  onAdd={handleAddBonus}
+                  onDelete={handleDeleteBonus}
+                />
+              </div>
+            </>
+          )}
+
+          {activeTab === 'total' && (
+            <TotalView
+              data={data}
+              baseScores={baseScores}
+              exchangeRate={exchangeRate}
+              onBaseScoreChange={handleBaseScoreChange}
+              onExchangeRateChange={handleExchangeRateChange}
+              activeChild={activeChild}
+              setActiveChild={setActiveChild}
+              onAddDeduction={handleAddDeduction}
+              onDeleteDeduction={handleDeleteDeduction}
+            />
+          )}
+
+          <div className="bottom-nav">
+            <button className={`nav-btn${activeTab === 'daily' ? ' active' : ''}`} onClick={() => setActiveTab('daily')}>
+              <span className="nav-glyph">📅</span><span className="label">紀錄</span>
+            </button>
+            <button className={`nav-btn${activeTab === 'summary' ? ' active' : ''}`} onClick={() => setActiveTab('summary')}>
+              <span className="nav-glyph">📊</span><span className="label">週統整</span>
+            </button>
+            <button className={`nav-btn${activeTab === 'bonus' ? ' active' : ''}`} onClick={() => setActiveTab('bonus')}>
+              <span className="nav-glyph">🪙</span><span className="label">加減分</span>
+            </button>
+            <button className={`nav-btn${activeTab === 'total' ? ' active' : ''}`} onClick={() => setActiveTab('total')}>
+              <span className="nav-glyph">🐷</span><span className="label">總分</span>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
