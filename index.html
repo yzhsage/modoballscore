@@ -535,8 +535,10 @@ function GradeSheet({ open, itemLabel, dateStr, value, onSelect, onClose }) {
 function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange, onOverride, selectedDate, setSelectedDate }) {
   const dayType = getDayType(selectedDate, overrides);
   const specialItems = dayType === 'school' ? SCHOOL_ITEMS : HOLIDAY_ITEMS;
+  
+  // 1. 做好層層防護，確保 safeDays 與 scores 絕不為 undefined
   const safeDays = childData?.days || {};
-  const day = childData.days[selectedDate] || { scores: {} };
+  const day = safeDays[selectedDate] || {};
   const scores = day.scores || {};
 
   return (
@@ -556,7 +558,8 @@ function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange,
         {COMMON_ITEMS.map((item) => (
           <div className="item-row" key={item}>
             <div className="item-label">{item}</div>
-            <GradeChips value={day.scores[item] || null} onChange={(g) => onScoreChange(childId, selectedDate, item, g)} />
+            {/* 2. 注意這裡改用安全的 scores[item]，不再用 day.scores[item] */}
+            <GradeChips value={scores[item] || null} onChange={(g) => onScoreChange(childId, selectedDate, item, g)} />
           </div>
         ))}
       </div>
@@ -566,7 +569,8 @@ function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange,
         {specialItems.map((item) => (
           <div className="item-row" key={item}>
             <div className="item-label">{item}</div>
-            <GradeChips value={day.scores[item] || null} onChange={(g) => onScoreChange(childId, selectedDate, item, g)} />
+            {/* 3. 注意這裡一樣改用安全的 scores[item] */}
+            <GradeChips value={scores[item] || null} onChange={(g) => onScoreChange(childId, selectedDate, item, g)} />
           </div>
         ))}
       </div>
@@ -574,7 +578,6 @@ function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange,
     </div>
   );
 }
-
 /* ---------------------------------------------------------
    整週補登畫面
 --------------------------------------------------------- */
