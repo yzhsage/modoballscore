@@ -345,6 +345,7 @@ function allTimeTotalForChild(childData, base) {
 }
 
 function weekTotalForChild(childData, mondayStr) {
+  const safeChildData = childData || { days: {}, bonuses: [] };
   const dateStrs = getWeekDateStrs(mondayStr);
   let dailyTotal = 0;
   const itemTotals = {};
@@ -364,6 +365,7 @@ function weekTotalForChild(childData, mondayStr) {
 }
 
 function itemWeekTotal(childData, mondayStr, item) {
+  if (!childData || !childData.days) return 0;
   const dateStrs = getWeekDateStrs(mondayStr);
   let total = 0;
   dateStrs.forEach((ds) => {
@@ -681,6 +683,7 @@ function SummaryCard({ child, totals }) {
 }
 
 function BreakdownList({ totals }) {
+  const itemTotals = totals?.itemTotals || {};
   const rows = ALL_ITEMS_ORDER.filter((item) => Object.prototype.hasOwnProperty.call(totals.itemTotals, item));
   if (rows.length === 0) return <div className="empty-note">這週還沒有項目紀錄</div>;
   return (
