@@ -215,7 +215,22 @@
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root">
+  <div style="padding:60px 20px;text-align:center;font-family:-apple-system,sans-serif;color:#8B8A80;">載入中，如果一直停在這裡，代表程式有問題，請截圖傳給開發者...</div>
+</div>
+<div id="fallback-error" style="display:none;padding:16px;margin:16px;border-radius:12px;background:#FBEBEA;color:#9C2E27;font-family:-apple-system,sans-serif;font-size:13px;white-space:pre-wrap;word-break:break-all;"></div>
+<script>
+  function showFallbackError(msg) {
+    var el = document.getElementById('fallback-error');
+    if (el) { el.style.display = 'block'; el.innerText = '⚠️ 發生錯誤：\n' + msg; }
+  }
+  window.addEventListener('error', function (e) {
+    showFallbackError((e.message || '未知錯誤') + '\n位置: ' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    showFallbackError('Promise 錯誤: ' + (e.reason && e.reason.message ? e.reason.message : JSON.stringify(e.reason)));
+  });
+</script>
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useMemo } = React;
 
