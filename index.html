@@ -3,223 +3,275 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>多多 ＆ 球球 記分本</title>
+<title>多多 ＆ 球球 記分本 🌈</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-    color: #2B2B26;
-    background-color: #FAFAF6;
+    font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    color: #2D3142;
+    background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 30%, #E0C3FC 70%, #8EC5FC 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
   .app-root {
-    background-color: #FAFAF6;
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     background-image:
-      linear-gradient(rgba(47,95,219,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(47,95,219,0.05) 1px, transparent 1px);
-    background-size: 22px 22px;
+      radial-gradient(circle, rgba(255, 107, 107, 0.25) 0 6px, transparent 7px),
+      radial-gradient(circle, rgba(255, 209, 102, 0.3) 0 7px, transparent 8px),
+      radial-gradient(circle, rgba(6, 214, 160, 0.25) 0 5px, transparent 6px),
+      radial-gradient(circle, rgba(17, 138, 178, 0.25) 0 6px, transparent 7px),
+      radial-gradient(circle, rgba(157, 78, 221, 0.25) 0 6px, transparent 7px);
+    background-position: 5% 10%, 92% 8%, 75% 50%, 12% 70%, 60% 90%;
+    background-repeat: repeat;
+    background-size: 220px 220px, 280px 280px, 240px 240px, 260px 260px, 200px 200px;
     min-height: 100vh;
-    max-width: 480px;
+    max-width: 500px;
     margin: 0 auto;
-    padding-bottom: 84px;
+    padding-bottom: 90px;
     position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
   }
-  .num { font-family: 'Space Grotesk', sans-serif; }
+  .num { font-family: 'Fredoka', sans-serif; font-weight: 600; }
 
+  /* 頂部導覽欄 - 彩虹漸層 */
   .header {
-    padding: 18px 18px 14px;
+    padding: 16px 18px;
     display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 2px solid #2B2B26;
-    background: #FAFAF6;
+    border-bottom: 4px solid;
+    border-image: linear-gradient(90deg, #FF6B6B, #FFD166, #06D6A0, #118AB2, #9D4EDD) 1;
+    background: rgba(255, 255, 255, 0.95);
     position: sticky; top: 0; z-index: 5;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
   }
-  .header-title { font-size: 19px; font-weight: 700; letter-spacing: 0.5px; }
-  .header-title .b { color: #2F5FDB; }
-  .header-title .r { color: #D3453B; }
+  .header-title { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  .header-title .b { color: #118AB2; text-shadow: 1px 1px 0 #E0F2FE; }
+  .header-title .r { color: #FF6B6B; text-shadow: 1px 1px 0 #FFE4E6; }
   .header-right { display: flex; align-items: center; gap: 8px; }
-  .sync-dot { width: 9px; height: 9px; border-radius: 50%; background: #C9C7B8; flex-shrink: 0; }
-  .sync-dot.ok { background: #2F8F46; }
-  .sync-dot.error { background: #C23B3B; }
-  .sync-dot.connecting { background: #D98A29; }
-  .sync-error-banner { background: #FBEBEA; color: #9C2E27; font-size: 11.5px; font-weight: 600; padding: 8px 16px; text-align: center; }
-  .whoami { display: flex; gap: 4px; border: 1.5px solid #2B2B26; border-radius: 100px; padding: 2px; }
+  .sync-dot { width: 12px; height: 12px; border-radius: 50%; background: #CBD5E1; flex-shrink: 0; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #E2E8F0; }
+  .sync-dot.ok { background: #06D6A0; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #A7F3D0; }
+  .sync-dot.error { background: #FF6B6B; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #FECDD3; }
+  .sync-dot.connecting { background: #FFD166; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #FEF08A; }
+  .sync-error-banner { background: #FFE4E6; color: #E11D48; font-size: 12px; font-weight: 700; padding: 10px 16px; text-align: center; border-bottom: 2px solid #FDA4AF; }
+  
+  .whoami { display: flex; gap: 4px; border: 2.5px solid #2D3142; border-radius: 100px; padding: 3px; background: #fff; }
   .whoami button {
-    border: none; background: transparent; padding: 5px 10px; border-radius: 100px;
-    font-size: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 600; cursor: pointer; color: #2B2B26;
+    border: none; background: transparent; padding: 6px 14px; border-radius: 100px;
+    font-size: 13px; font-family: 'Fredoka', sans-serif; font-weight: 700; cursor: pointer; color: #64748B;
+    transition: all .15s ease;
   }
-  .whoami button.active { background: #2B2B26; color: #fff; }
+  .whoami button.active { background: linear-gradient(135deg, #FFD166, #FF9F1C); color: #2D3142; box-shadow: 0 3px 0 #D97706; transform: translateY(-1px); }
 
   .panel { padding: 16px; }
 
+  /* 小孩主題調色板 */
   .child-theme {
-    background: var(--accent-soft, transparent);
-    border-radius: 22px;
-    margin: 6px 10px 0;
-    padding: 2px 6px 10px;
-    transition: background .2s ease;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 28px;
+    margin: 8px 6px 0;
+    padding: 6px 10px 12px;
+    border: 3px solid var(--accent-soft, #E2E8F0);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+    transition: all .2s ease;
   }
-  .child-theme .section-title { color: var(--accent-dark, #8B8A80); }
-  .child-theme .item-row { border-color: var(--accent, #E7E5D9); border-width: 1.5px; background: #fff; }
-  .child-theme .icon-btn { border-color: var(--accent, #2B2B26); color: var(--accent-dark, #2B2B26); background: #fff; }
-  .child-theme .today-btn { border-color: var(--accent, #2B2B26); color: var(--accent-dark, #2B2B26); background: #fff; }
-  .child-theme .add-btn { background: var(--accent, #2B2B26); }
-  .child-theme .row-label-cell { background: #fff; }
-  .child-theme .week-table-wrap { border-color: var(--accent, #E7E5D9); }
-  .child-theme .grid-cell { border-color: var(--accent-soft, #E7E5D9); }
-  .child-theme .date-nav-label { color: var(--accent-dark, #2B2B26); }
-  .child-theme .recorded-note { color: var(--accent-dark, #B0AE9F); opacity: .7; }
+  .child-theme .section-title { color: var(--accent-dark, #7C3AED); }
+  .child-theme .item-row { border-color: var(--accent-soft, #E2E8F0); background: #fff; }
+  .child-theme .icon-btn { border-color: #2D3142; color: #2D3142; background: #fff; box-shadow: 0 3px 0 #2D3142; }
+  .child-theme .today-btn { border-color: #2D3142; color: #2D3142; background: #FFD166; box-shadow: 0 3px 0 #2D3142; }
+  .child-theme .add-btn { background: linear-gradient(135deg, #06D6A0, #059669); box-shadow: 0 4px 0 #047857; }
 
-  .child-switch { display: flex; gap: 12px; padding: 16px 16px 4px; }
+  /* 兒童切換 Pill */
+  .child-switch { display: flex; gap: 14px; padding: 16px 10px 6px; }
   .child-pill {
-    flex: 1; padding: 12px 0; border-radius: 18px; border: none; font-weight: 800; font-size: 15.5px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
-    transition: transform .1s ease, box-shadow .1s ease;
+    flex: 1; padding: 12px 0; border-radius: 22px; border: 3px solid transparent; font-weight: 700; font-size: 16px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all .15s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .child-emoji { font-size: 18px; }
-  .child-pill.duoduo { background: #fff; color: #2F5FDB; box-shadow: inset 0 0 0 2.5px #2F5FDB, 0 3px 0 #D8D6C9; }
-  .child-pill.qiuqiu { background: #fff; color: #D3453B; box-shadow: inset 0 0 0 2.5px #D3453B, 0 3px 0 #D8D6C9; }
-  .child-pill.active.duoduo { background: linear-gradient(135deg, #5B8AFF, #2947B0); color: #fff; box-shadow: 0 5px 0 #1F3480; transform: translateY(-2px); }
-  .child-pill.active.qiuqiu { background: linear-gradient(135deg, #FF7A6B, #B8352A); color: #fff; box-shadow: 0 5px 0 #7A1E17; transform: translateY(-2px); }
-  .child-pill:active { transform: translateY(2px) !important; box-shadow: 0 0 0 currentColor !important; }
+  .child-emoji { font-size: 22px; display: inline-block; }
+  .child-pill.duoduo { background: #E0F2FE; color: #0284C7; border-color: #38BDF8; box-shadow: 0 4px 0 #0284C7; }
+  .child-pill.qiuqiu { background: #FFE4E6; color: #E11D48; border-color: #FB7185; box-shadow: 0 4px 0 #E11D48; }
+  .child-pill.active.duoduo { background: linear-gradient(135deg, #38BDF8, #0284C7); color: #fff; border-color: #0284C7; box-shadow: 0 6px 0 #0369A1; transform: translateY(-3px); }
+  .child-pill.active.qiuqiu { background: linear-gradient(135deg, #FB7185, #E11D48); color: #fff; border-color: #E11D48; box-shadow: 0 6px 0 #BE123C; transform: translateY(-3px); }
+  .child-pill:active { transform: translateY(2px) !important; box-shadow: 0 0 0 transparent !important; }
+  .child-pill.active .child-emoji { animation: pillBounce 1.2s ease-in-out infinite; }
+  @keyframes pillBounce { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-4px) rotate(-8deg); } }
 
   .section-title {
-    font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-    color: #8B8A80; margin: 20px 0 8px; font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+    color: #7C3AED; margin: 22px 0 10px; font-family: 'Fredoka', sans-serif;
+    display: flex; align-items: center; gap: 6px;
   }
+  .section-title::before { content: ''; display: inline-block; width: 8px; height: 14px; background: currentColor; border-radius: 4px; }
 
-  .date-nav { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  /* 日期導覽 */
+  .date-nav { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
   .date-nav-center { flex: 1; text-align: center; }
-  .date-nav-label { font-size: 15px; font-weight: 700; }
-  .date-nav-label .weekday { font-weight: 500; color: #8B8A80; font-size: 13px; }
-  .icon-btn { background: #fff; border: 1.5px solid #2B2B26; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; line-height: 1; }
-  .today-btn { border: 1.5px solid #2B2B26; background: #fff; border-radius: 100px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
-  .daytype-badge { margin-top: 4px; border: none; border-radius: 100px; padding: 3px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: 'Space Grotesk', sans-serif; }
-  .daytype-badge.school { background: #E4ECFB; color: #1F3F99; }
-  .daytype-badge.holiday { background: #FDEEDB; color: #9A6A1A; }
-  .daytype-editor { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
-  .daytype-opt { border: 1.5px solid #D8D6C9; background: #fff; border-radius: 100px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
-  .daytype-opt.selected { border-color: #2B2B26; background: #2B2B26; color: #fff; }
+  .date-nav-label { font-size: 16px; font-weight: 700; color: #1E293B; }
+  .date-nav-label .weekday { font-weight: 700; color: #0284C7; font-size: 14px; background: #E0F2FE; padding: 2px 8px; border-radius: 8px; margin-left: 4px; }
+  .icon-btn { background: #fff; border: 2.5px solid #2D3142; border-radius: 12px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; line-height: 1; box-shadow: 0 3px 0 #2D3142; transition: transform .1s ease; font-weight: 700; }
+  .icon-btn:active { transform: translateY(3px); box-shadow: none; }
+  .today-btn { border: 2.5px solid #2D3142; background: #FFD166; border-radius: 100px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Fredoka', sans-serif; box-shadow: 0 3px 0 #2D3142; transition: transform .1s ease; color: #2D3142; }
+  .today-btn:active { transform: translateY(3px); box-shadow: none; }
+  
+  .daytype-badge { margin-top: 6px; border: 2px solid transparent; border-radius: 100px; padding: 4px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: 'Fredoka', sans-serif; transition: all .15s ease; }
+  .daytype-badge.school { background: #E0F2FE; color: #0369A1; border-color: #BAE6FD; }
+  .daytype-badge.holiday { background: #FEF3C7; color: #B45309; border-color: #FDE68A; }
+  .daytype-editor { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+  .daytype-opt { border: 2px solid #CBD5E1; background: #fff; border-radius: 100px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 700; }
+  .daytype-opt.selected { border-color: #2D3142; background: #2D3142; color: #fff; }
 
-  .item-list { display: flex; flex-direction: column; gap: 10px; }
-  .item-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1.5px solid #E7E5D9; border-radius: 12px; padding: 10px 12px; }
-  .item-label { font-size: 14px; font-weight: 600; min-width: 62px; }
+  /* 評分項目列表 */
+  .item-list { display: flex; flex-direction: column; gap: 12px; }
+  .item-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 2.5px solid #F1F5F9; border-left-width: 6px; border-left-color: #38BDF8; border-radius: 18px; padding: 10px 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+  .child-theme .item-row { border-left-color: var(--accent, #38BDF8); }
+  .item-label { font-size: 15px; font-weight: 700; min-width: 68px; color: #334155; }
 
-  .grade-row { display: flex; gap: 5px; }
+  /* 評分按鈕 (A/B/C/D/E) - 果凍色彩 */
+  .grade-row { display: flex; gap: 6px; }
   .grade-chip {
-    width: 36px; height: 40px; border-radius: 9px; border: 1.5px solid #E0DECF; background: #fff;
+    position: relative; width: 38px; height: 44px; border-radius: 12px; border: 2.5px solid #E2E8F0; background: #F8FAFC;
     display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
-    font-family: 'Space Grotesk', sans-serif; color: #8B8A80;
+    font-family: 'Fredoka', sans-serif; color: #94A3B8; transition: all .15s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .grade-letter { font-size: 14px; font-weight: 700; line-height: 1.1; }
-  .grade-pt { font-size: 9px; font-weight: 600; line-height: 1.1; }
-  .grade-chip.active.grade-A { background: #2F8F46; border-color: #2F8F46; color: #fff; }
-  .grade-chip.active.grade-B { background: #7FAE3B; border-color: #7FAE3B; color: #fff; }
-  .grade-chip.active.grade-C { background: #9B9B93; border-color: #9B9B93; color: #fff; }
-  .grade-chip.active.grade-D { background: #D98A29; border-color: #D98A29; color: #fff; }
-  .grade-chip.active.grade-E { background: #C23B3B; border-color: #C23B3B; color: #fff; }
+  .grade-letter { font-size: 15px; font-weight: 700; line-height: 1.1; }
+  .grade-pt { font-size: 10px; font-weight: 700; line-height: 1.1; }
+  .grade-star { position: absolute; top: -8px; right: -5px; font-size: 12px; color: #FFD166; text-shadow: 0 1px 2px rgba(0,0,0,0.2); display: none; }
+  .grade-chip.active { transform: translateY(-3px) scale(1.08); }
+  .grade-chip.active.grade-A { background: linear-gradient(135deg, #10B981, #059669); border-color: #059669; color: #fff; box-shadow: 0 4px 0 #047857; }
+  .grade-chip.active.grade-A .grade-star { display: block; }
+  .grade-chip.active.grade-B { background: linear-gradient(135deg, #84CC16, #65A30D); border-color: #65A30D; color: #fff; box-shadow: 0 4px 0 #4D7C0F; }
+  .grade-chip.active.grade-C { background: linear-gradient(135deg, #0EA5E9, #0284C7); border-color: #0284C7; color: #fff; box-shadow: 0 4px 0 #0369A1; }
+  .grade-chip.active.grade-D { background: linear-gradient(135deg, #F59E0B, #D97706); border-color: #D97706; color: #fff; box-shadow: 0 4px 0 #B45309; }
+  .grade-chip.active.grade-E { background: linear-gradient(135deg, #EF4444, #DC2626); border-color: #DC2626; color: #fff; box-shadow: 0 4px 0 #B91C1C; }
 
-  .recorded-note { text-align: center; font-size: 11px; color: #B0AE9F; margin-top: 18px; font-family: 'Space Grotesk', sans-serif; }
+  .recorded-note { text-align: center; font-size: 12px; color: #94A3B8; margin-top: 20px; font-family: 'Fredoka', sans-serif; font-weight: 500; }
 
-  .week-table-wrap { overflow-x: auto; border: 1.5px solid #E7E5D9; border-radius: 12px; background: #fff; }
+  /* 週補登表格 */
+  .week-table-wrap { overflow-x: auto; border: 2.5px solid #E2E8F0; border-radius: 18px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
   .week-table { border-collapse: collapse; width: 100%; min-width: 460px; }
-  .week-table th, .week-table td { text-align: center; padding: 6px 4px; font-size: 11px; }
-  .week-table thead th { font-family: 'Space Grotesk', sans-serif; color: #8B8A80; font-weight: 600; border-bottom: 1.5px solid #E7E5D9; }
-  .th-date { font-size: 9px; color: #B0AE9F; }
-  .row-label-cell { text-align: left; font-size: 12px; font-weight: 600; padding-left: 10px; white-space: nowrap; position: sticky; left: 0; background: #fff; }
+  .week-table th, .week-table td { text-align: center; padding: 8px 4px; font-size: 12px; }
+  .week-table thead th { font-family: 'Fredoka', sans-serif; color: #7C3AED; font-weight: 700; border-bottom: 2.5px solid #E2E8F0; background: #F8FAFC; }
+  .th-date { font-size: 10px; color: #94A3B8; }
+  .row-label-cell { text-align: left; font-size: 13px; font-weight: 700; padding-left: 12px; white-space: nowrap; position: sticky; left: 0; background: #fff; color: #334155; }
   .grid-cell {
-    width: 34px; height: 30px; border-radius: 7px; border: 1.5px solid #E7E5D9; background: #FAFAF6;
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12px; color: #B0AE9F; cursor: pointer;
+    width: 36px; height: 32px; border-radius: 10px; border: 2px solid #E2E8F0; background: #F8FAFC;
+    font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 13px; color: #CBD5E1; cursor: pointer;
+    transition: all .1s ease;
   }
-  .grid-cell.g-A { background: #2F8F46; border-color: #2F8F46; color: #fff; }
-  .grid-cell.g-B { background: #7FAE3B; border-color: #7FAE3B; color: #fff; }
-  .grid-cell.g-C { background: #9B9B93; border-color: #9B9B93; color: #fff; }
-  .grid-cell.g-D { background: #D98A29; border-color: #D98A29; color: #fff; }
-  .grid-cell.g-E { background: #C23B3B; border-color: #C23B3B; color: #fff; }
-  .grid-cell.disabled { background: repeating-linear-gradient(45deg, #F0EFE7, #F0EFE7 3px, #E7E5D9 3px, #E7E5D9 6px); border: none; width: 34px; height: 30px; display: inline-flex; align-items: center; justify-content: center; color: transparent; }
+  .grid-cell:active { transform: scale(0.92); }
+  .grid-cell.g-A { background: #10B981; border-color: #10B981; color: #fff; box-shadow: 0 2px 0 #047857; }
+  .grid-cell.g-B { background: #84CC16; border-color: #84CC16; color: #fff; box-shadow: 0 2px 0 #4D7C0F; }
+  .grid-cell.g-C { background: #0EA5E9; border-color: #0EA5E9; color: #fff; box-shadow: 0 2px 0 #0369A1; }
+  .grid-cell.g-D { background: #F59E0B; border-color: #F59E0B; color: #fff; box-shadow: 0 2px 0 #B45309; }
+  .grid-cell.g-E { background: #EF4444; border-color: #EF4444; color: #fff; box-shadow: 0 2px 0 #B91C1C; }
+  .grid-cell.disabled { background: repeating-linear-gradient(45deg, #F1F5F9, #F1F5F9 4px, #E2E8F0 4px, #E2E8F0 8px); border: none; width: 36px; height: 32px; display: inline-flex; align-items: center; justify-content: center; color: transparent; }
 
-  .sheet-backdrop { position: fixed; inset: 0; background: rgba(43,43,38,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 30; }
-  .sheet { background: #fff; width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 18px; }
-  .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-  .sheet-item { font-size: 16px; font-weight: 700; }
-  .sheet-date { font-size: 12px; color: #8B8A80; font-family: 'Space Grotesk', sans-serif; }
-  .sheet .grade-row { justify-content: space-between; }
-  .sheet .grade-chip { flex: 1; height: 52px; }
+  /* Sheet 彈出選擇器 */
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; z-index: 30; }
+  .sheet { background: #fff; width: 100%; max-width: 500px; border-radius: 28px 28px 0 0; padding: 22px; border-top: 6px solid; border-image: linear-gradient(90deg, #FF6B6B, #FFD166, #06D6A0, #118AB2, #9D4EDD) 1; box-shadow: 0 -10px 25px rgba(0,0,0,0.15); }
+  .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .sheet-item { font-size: 18px; font-weight: 700; color: #1E293B; }
+  .sheet-date { font-size: 13px; color: #64748B; font-family: 'Fredoka', sans-serif; }
+  .sheet .grade-row { justify-content: space-between; gap: 8px; }
+  .sheet .grade-chip { flex: 1; height: 56px; }
 
-  .summary-cards { display: flex; gap: 10px; margin-top: 6px; }
-  .summary-card { flex: 1; border: 2px solid; border-radius: 14px; padding: 14px 10px; background: #fff; text-align: center; }
-  .summary-card-head { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
-  .summary-total { font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; }
-  .summary-sub { font-size: 10px; color: #8B8A80; margin-top: 4px; font-family: 'Space Grotesk', sans-serif; }
+  /* 統計卡片 */
+  .summary-cards { display: flex; gap: 12px; margin-top: 8px; }
+  .summary-card { flex: 1; border: 3px solid; border-radius: 22px; padding: 16px 12px; background: #fff; text-align: center; box-shadow: 0 6px 16px rgba(0,0,0,0.04); }
+  .summary-card-head { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .summary-total { font-family: 'Fredoka', sans-serif; font-size: 34px; font-weight: 700; }
+  .summary-sub { font-size: 11px; color: #64748B; margin-top: 4px; font-family: 'Fredoka', sans-serif; font-weight: 600; }
 
   .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .breakdown-list { display: flex; flex-direction: column; gap: 5px; }
-  .breakdown-row { display: flex; justify-content: space-between; font-size: 12.5px; background: #fff; border: 1px solid #E7E5D9; border-radius: 8px; padding: 6px 9px; }
-  .breakdown-row .pos, .bonus-mini-row .pos, .pos { color: #2F8F46; font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
-  .breakdown-row .neg, .bonus-mini-row .neg, .neg { color: #C23B3B; font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
-  .bonus-mini-list { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
-  .bonus-mini-row { display: flex; justify-content: space-between; font-size: 11px; color: #6B6A60; }
+  .breakdown-list { display: flex; flex-direction: column; gap: 6px; }
+  .breakdown-row { display: flex; justify-content: space-between; font-size: 13px; background: #fff; border: 2px solid #E2E8F0; border-radius: 12px; padding: 7px 10px; font-weight: 700; }
+  .breakdown-row .pos, .bonus-mini-row .pos, .pos { color: #10B981; font-family: 'Fredoka', sans-serif; font-weight: 700; }
+  .breakdown-row .neg, .bonus-mini-row .neg, .neg { color: #EF4444; font-family: 'Fredoka', sans-serif; font-weight: 700; }
+  .bonus-mini-list { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .bonus-mini-row { display: flex; justify-content: space-between; font-size: 11.5px; color: #64748B; font-weight: 600; }
 
-  .empty-note { font-size: 12.5px; color: #B0AE9F; padding: 14px 0; text-align: center; }
+  .empty-note { font-size: 13px; color: #94A3B8; padding: 16px 0; text-align: center; font-weight: 600; }
 
-  .trend-chart { background: #fff; border: 1.5px solid #E7E5D9; border-radius: 12px; padding: 8px 4px 4px; }
-  .trend-legend { display: flex; gap: 14px; justify-content: center; font-size: 11px; font-family: 'Space Grotesk', sans-serif; padding: 4px 0 2px; }
-  .trend-legend span { display: inline-flex; align-items: center; gap: 4px; }
-  .trend-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .trend-chart { background: #fff; border: 2.5px solid #E2E8F0; border-radius: 20px; padding: 12px 6px 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+  .trend-legend { display: flex; gap: 16px; justify-content: center; font-size: 12px; font-family: 'Fredoka', sans-serif; padding: 6px 0 2px; }
+  .trend-legend span { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+  .trend-legend i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
   .trend-header-row { display: flex; align-items: center; justify-content: space-between; }
   .item-select {
-    border: 1.5px solid #E0DECF; border-radius: 100px; padding: 5px 10px; font-size: 12px; font-weight: 700;
-    background: #fff; color: #2B2B26; font-family: inherit; margin-top: 18px;
+    border: 2.5px solid #CBD5E1; border-radius: 100px; padding: 6px 14px; font-size: 13px; font-weight: 700;
+    background: #fff; color: #2D3142; font-family: inherit; margin-top: 20px; cursor: pointer;
   }
 
-  .bonus-form { display: flex; flex-direction: column; gap: 8px; }
-  .input { border: 1.5px solid #E0DECF; border-radius: 10px; padding: 10px 12px; font-size: 13.5px; font-family: inherit; background: #fff; }
-  .add-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: #2B2B26; color: #fff; border: none; border-radius: 10px; padding: 11px; font-weight: 700; font-size: 14px; cursor: pointer; }
+  /* 表單元件 */
+  .bonus-form { display: flex; flex-direction: column; gap: 10px; }
+  .input { border: 2.5px solid #CBD5E1; border-radius: 14px; padding: 11px 14px; font-size: 14px; font-family: inherit; background: #fff; font-weight: 600; transition: border-color .15s ease; }
+  .input:focus { outline: none; border-color: #0EA5E9; }
+  .add-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(135deg, #10B981, #059669); color: #fff; border: none; border-radius: 14px; padding: 12px; font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 4px 0 #047857; transition: transform .1s ease; }
+  .add-btn:active { transform: translateY(3px); box-shadow: none; }
 
-  .total-card { padding: 16px 10px; }
-  .savings-amount { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #2B2B26; margin-top: 8px; }
-  .settings-toggle { width: 100%; margin-top: 12px; background: #fff; border: 1.5px dashed #C9C7B8; border-radius: 10px; padding: 8px; font-size: 12px; font-weight: 700; color: #8B8A80; cursor: pointer; }
-  .settings-panel { background: #fff; border: 1.5px solid #E7E5D9; border-radius: 12px; padding: 10px 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
-  .settings-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; }
-  .settings-row .input.small { width: 84px; text-align: right; }
-  .convert-preview { font-size: 12.5px; color: #6B6A60; padding: 2px 2px; font-family: 'Space Grotesk', sans-serif; }
-  .form-error { font-size: 12px; color: #C23B3B; font-weight: 700; padding: 0 2px; }
-  .deduct-btn { background: #C23B3B; }
-  .bonus-list { display: flex; flex-direction: column; gap: 8px; }
-  .bonus-row { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1.5px solid #E7E5D9; border-radius: 12px; padding: 10px 12px; }
-  .bonus-reason { font-size: 13.5px; font-weight: 600; }
-  .bonus-meta { font-size: 10.5px; color: #B0AE9F; margin-top: 2px; font-family: 'Space Grotesk', sans-serif; }
-  .bonus-right { display: flex; align-items: center; gap: 8px; }
-  .big { font-size: 15px; }
-  .confirm-text { font-size: 10px; font-weight: 700; color: #C23B3B; }
+  .total-card { padding: 18px 12px; }
+  .savings-amount { font-family: 'Fredoka', sans-serif; font-size: 19px; font-weight: 700; color: #059669; margin-top: 8px; }
+  .settings-toggle { width: 100%; margin-top: 14px; background: #fff; border: 2px dashed #94A3B8; border-radius: 14px; padding: 10px; font-size: 13px; font-weight: 700; color: #64748B; cursor: pointer; }
+  .settings-panel { background: #fff; border: 2.5px solid #E2E8F0; border-radius: 16px; padding: 12px 14px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; font-weight: 700; color: #334155; }
+  .settings-row .input.small { width: 90px; text-align: right; }
+  .convert-preview { font-size: 13px; color: #0284C7; padding: 2px 4px; font-family: 'Fredoka', sans-serif; font-weight: 700; }
+  .form-error { font-size: 12.5px; color: #EF4444; font-weight: 700; padding: 0 4px; }
+  .deduct-btn { background: linear-gradient(135deg, #FB7185, #E11D48); box-shadow: 0 4px 0 #BE123C; }
+  .bonus-list { display: flex; flex-direction: column; gap: 10px; }
+  .bonus-row { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 2.5px solid #E2E8F0; border-radius: 16px; padding: 12px 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+  .bonus-reason { font-size: 14.5px; font-weight: 700; color: #1E293B; }
+  .bonus-meta { font-size: 11px; color: #94A3B8; margin-top: 3px; font-family: 'Fredoka', sans-serif; font-weight: 600; }
+  .bonus-right { display: flex; align-items: center; gap: 10px; }
+  .big { font-size: 17px; }
+  .confirm-text { font-size: 11px; font-weight: 700; color: #EF4444; }
 
+  /* 底部導覽列 - Rainbow Glow */
   .bottom-nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 480px; background: #fff; border-top: 2px solid #2B2B26;
-    display: flex; padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+    width: 100%; max-width: 500px; background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 4px solid transparent; border-image: linear-gradient(90deg, #38BDF8, #A855F7, #FFD166, #10B981, #FB7185) 1;
+    display: flex; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     z-index: 10;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.08);
   }
-  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; padding: 6px 0; cursor: pointer; color: #B0AE9F; }
-  .nav-btn.active { color: #2B2B26; }
-  .nav-btn .nav-glyph { font-size: 19px; line-height: 1; }
-  .nav-btn span.label { font-size: 10.5px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 6px 0; cursor: pointer; color: #94A3B8; transition: all .15s ease; }
+  .nav-btn .nav-glyph { font-size: 22px; line-height: 1; display: inline-block; transition: transform .2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .nav-btn.active { color: #1E293B; }
+  .nav-btn.active .nav-glyph { transform: translateY(-3px) scale(1.2); }
+  .nav-btn:nth-child(1).active { color: #0284C7; }
+  .nav-btn:nth-child(2).active { color: #7C3AED; }
+  .nav-btn:nth-child(3).active { color: #D97706; }
+  .nav-btn:nth-child(4).active { color: #059669; }
+  .nav-btn span.label { font-size: 11px; font-weight: 700; font-family: 'Fredoka', sans-serif; }
 
-  .mode-toggle { display: flex; gap: 8px; padding: 0 16px 12px; }
-  .mode-btn { flex: 1; padding: 8px 0; border-radius: 9px; border: 1.5px solid #2B2B26; background: #fff; font-weight: 700; font-size: 12.5px; cursor: pointer; }
-  .mode-btn.active { background: #2B2B26; color: #fff; }
+  .mode-toggle { display: flex; gap: 10px; padding: 0 10px 14px; }
+  .mode-btn { flex: 1; padding: 9px 0; border-radius: 14px; border: 2.5px solid #2D3142; background: #fff; font-weight: 700; font-size: 13px; cursor: pointer; transition: transform .1s ease; color: #2D3142; }
+  .mode-btn.active { background: #2D3142; color: #fff; }
+  .mode-btn:active { transform: translateY(2px); }
 
-  .loading-screen { display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Space Grotesk', sans-serif; color: #8B8A80; }
+  .loading-screen { display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Fredoka', sans-serif; color: #64748B; font-size: 18px; font-weight: 700; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
 <div id="root">
-  <div style="padding:60px 20px;text-align:center;font-family:-apple-system,sans-serif;color:#8B8A80;">載入中，如果一直停在這裡，代表程式有問題，請截圖傳給開發者...</div>
+  <div style="padding:60px 20px;text-align:center;font-family:-apple-system,sans-serif;color:#64748B;">載入中，如果一直停在這裡，代表程式有問題，請截圖傳給開發者...</div>
 </div>
-<div id="fallback-error" style="display:none;padding:16px;margin:16px;border-radius:12px;background:#FBEBEA;color:#9C2E27;font-family:-apple-system,sans-serif;font-size:13px;white-space:pre-wrap;word-break:break-all;"></div>
+<div id="fallback-error" style="display:none;padding:16px;margin:16px;border-radius:16px;background:#FFE4E6;color:#9F1239;font-family:-apple-system,sans-serif;font-size:13px;white-space:pre-wrap;word-break:break-all;border:2px solid #FDA4AF;"></div>
 <script>
   function showFallbackError(msg) {
     var el = document.getElementById('fallback-error');
@@ -236,7 +288,7 @@
 const { useState, useEffect, useMemo } = React;
 
 /* ---------------------------------------------------------
-   雲端資料庫 (Firebase Realtime Database，免費方案)
+   雲端資料庫 (Firebase Realtime Database)
 --------------------------------------------------------- */
 const FIREBASE_URL = 'https://modoballscore-default-rtdb.asia-southeast1.firebasedatabase.app';
 
@@ -267,17 +319,11 @@ async function dbSet(key, value) {
 }
 
 /* ---------------------------------------------------------
-   待辦事項 (下個版本規劃)
-   1. 項目管理：讓爸媽可以在 App 內自行「新增／刪除」計分項目（不含改名）
-   2. 整週補登頁面加入視覺辨識功能：拍白板照片自動辨識帶入分數
---------------------------------------------------------- */
-
-/* ---------------------------------------------------------
    常數設定
 --------------------------------------------------------- */
 const CHILDREN = [
-  { id: 'duoduo', name: '多多', color: '#2F5FDB', soft: '#EAF0FE', dark: '#1F3F99', emoji: '🐷' },
-  { id: 'qiuqiu', name: '球球', color: '#D3453B', soft: '#FBEBEA', dark: '#9C2E27', emoji: '🐮' },
+  { id: 'duoduo', name: '多多', color: '#0284C7', soft: '#E0F2FE', dark: '#0369A1', emoji: '🐷' },
+  { id: 'qiuqiu', name: '球球', color: '#E11D48', soft: '#FFE4E6', dark: '#BE123C', emoji: '🐮' },
 ];
 
 const COMMON_ITEMS = ['起床', '中晝頓', '歇晝', '收𨑨迌物仔', '暗頓', '洗身軀', '歇睏'];
@@ -308,7 +354,7 @@ const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); r
 const getMonday = (d) => { const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day; return addDays(d, diff); };
 const weekdayIdx = (d) => (d.getDay() + 6) % 7;
 
-function getDayType(dateStr, overrides) {
+function getDayType(dateStr, overrides = {}) {
   if (overrides[dateStr]) return overrides[dateStr];
   const idx = weekdayIdx(parseDateStr(dateStr));
   return idx >= 5 ? 'holiday' : 'school';
@@ -330,7 +376,7 @@ function dateLabel(dateStr) {
 --------------------------------------------------------- */
 function emptyChildData() { return { days: {}, bonuses: [], deductions: [] }; }
 
-function allTimeTotalForChild(childData, base) {
+function allTimeTotalForChild(childData = emptyChildData(), base = 0) {
   let itemScore = 0;
   Object.values(childData.days || {}).forEach((day) => {
     Object.values(day.scores || {}).forEach((grade) => {
@@ -344,13 +390,13 @@ function allTimeTotalForChild(childData, base) {
   return { itemScore, bonusScore, deductionScore, total };
 }
 
-function weekTotalForChild(childData, mondayStr) {
-  const safeChildData = childData || { days: {}, bonuses: [] };
+function weekTotalForChild(childData = emptyChildData(), mondayStr) {
+  const safeChildData = childData || emptyChildData();
   const dateStrs = getWeekDateStrs(mondayStr);
   let dailyTotal = 0;
   const itemTotals = {};
   dateStrs.forEach((ds) => {
-    const day = childData.days[ds];
+    const day = (safeChildData.days || {})[ds];
     if (!day) return;
     Object.entries(day.scores || {}).forEach(([item, grade]) => {
       const pt = GRADE_POINTS[grade];
@@ -359,12 +405,12 @@ function weekTotalForChild(childData, mondayStr) {
       itemTotals[item] = (itemTotals[item] || 0) + pt;
     });
   });
-  const bonusEntries = (childData.bonuses || []).filter((b) => dateStrs.includes(b.date));
+  const bonusEntries = (safeChildData.bonuses || []).filter((b) => dateStrs.includes(b.date));
   const bonusTotal = bonusEntries.reduce((s, b) => s + Number(b.points || 0), 0);
   return { dailyTotal, itemTotals, bonusTotal, bonusEntries: bonusEntries.sort((a,b)=>b.date.localeCompare(a.date)), grandTotal: dailyTotal + bonusTotal };
 }
 
-function itemWeekTotal(childData, mondayStr, item) {
+function itemWeekTotal(childData = emptyChildData(), mondayStr, item) {
   if (!childData || !childData.days) return 0;
   const dateStrs = getWeekDateStrs(mondayStr);
   let total = 0;
@@ -377,11 +423,11 @@ function itemWeekTotal(childData, mondayStr, item) {
 }
 
 /* ---------------------------------------------------------
-   簡易 SVG 折線圖 (取代 recharts，純手刻無外部依賴)
+   SVG 折線圖
 --------------------------------------------------------- */
 function MiniLineChart({ data, seriesKeys, colors, height = 200 }) {
   const width = 600;
-  const padding = { top: 12, right: 14, bottom: 24, left: 8 };
+  const padding = { top: 16, right: 16, bottom: 28, left: 12 };
   const values = data.flatMap((d) => seriesKeys.map((k) => Number(d[k]) || 0));
   let minV = Math.min(0, ...values);
   let maxV = Math.max(1, ...values);
@@ -396,22 +442,22 @@ function MiniLineChart({ data, seriesKeys, colors, height = 200 }) {
   return (
     <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height, display: 'block' }}>
       {minV < 0 && maxV > 0 && (
-        <line x1={padding.left} x2={width - padding.right} y1={yScale(0)} y2={yScale(0)} stroke="#D8D6C9" strokeDasharray="3 3" />
+        <line x1={padding.left} x2={width - padding.right} y1={yScale(0)} y2={yScale(0)} stroke="#CBD5E1" strokeDasharray="4 4" strokeWidth="1.5" />
       )}
       {seriesKeys.map((k, si) => {
         const points = data.map((d, i) => `${xScale(i)},${yScale(Number(d[k]) || 0)}`).join(' ');
         return (
           <g key={k}>
-            <polyline points={points} fill="none" stroke={colors[si]} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+            <polyline points={points} fill="none" stroke={colors[si]} strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" />
             {data.map((d, i) => (
-              <circle key={i} cx={xScale(i)} cy={yScale(Number(d[k]) || 0)} r="3" fill={colors[si]} />
+              <circle key={i} cx={xScale(i)} cy={yScale(Number(d[k]) || 0)} r="4.5" fill="#fff" stroke={colors[si]} strokeWidth="3" />
             ))}
           </g>
         );
       })}
       {data.map((d, i) => (
         (i % showEvery === 0 || i === data.length - 1) && (
-          <text key={i} x={xScale(i)} y={height - 6} fontSize="10" textAnchor="middle" fill="#B8B6AA" fontFamily="Space Grotesk, sans-serif">{d.label}</text>
+          <text key={i} x={xScale(i)} y={height - 6} fontSize="11" textAnchor="middle" fill="#64748B" fontWeight="600" fontFamily="Fredoka, sans-serif">{d.label}</text>
         )
       ))}
     </svg>
@@ -440,6 +486,7 @@ function GradeChips({ value, onChange }) {
           className={`grade-chip grade-${g.g}${value === g.g ? ' active' : ''}`}
           onClick={() => onChange(value === g.g ? null : g.g)}
         >
+          {g.g === 'A' && <span className="grade-star">★</span>}
           <span className="grade-letter">{g.g}</span>
           <span className="grade-pt">{g.pt > 0 ? `+${g.pt}` : g.pt}</span>
         </button>
@@ -475,7 +522,7 @@ function DateNav({ dateStr, onPrev, onNext, onToday, dayType, overrideActive, on
         <div className="date-nav-label">{d.getMonth() + 1}月{d.getDate()}日 <span className="weekday">週{WEEKDAY_LABELS[weekdayIdx(d)]}</span></div>
         {!editing ? (
           <button className={`daytype-badge ${dayType}`} onClick={() => setEditing(true)}>
-            {dayType === 'school' ? '上學日' : '假日'} ✎
+            {dayType === 'school' ? '🏫 上學日' : '🎈 假日'} ✎
           </button>
         ) : (
           <div className="daytype-editor">
@@ -535,8 +582,6 @@ function GradeSheet({ open, itemLabel, dateStr, value, onSelect, onClose }) {
 function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange, onOverride, selectedDate, setSelectedDate }) {
   const dayType = getDayType(selectedDate, overrides);
   const specialItems = dayType === 'school' ? SCHOOL_ITEMS : HOLIDAY_ITEMS;
-  
-  // 1. 做好層層防護，確保 safeDays 與 scores 絕不為 undefined
   const safeDays = childData?.days || {};
   const day = safeDays[selectedDate] || {};
   const scores = day.scores || {};
@@ -553,31 +598,30 @@ function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange,
         onSetOverride={(val) => onOverride(selectedDate, val)}
       />
 
-      <div className="section-title">共同</div>
+      <div className="section-title">共同項目</div>
       <div className="item-list">
         {COMMON_ITEMS.map((item) => (
           <div className="item-row" key={item}>
             <div className="item-label">{item}</div>
-            {/* 2. 注意這裡改用安全的 scores[item]，不再用 day.scores[item] */}
             <GradeChips value={scores[item] || null} onChange={(g) => onScoreChange(childId, selectedDate, item, g)} />
           </div>
         ))}
       </div>
 
-      <div className="section-title">{dayType === 'school' ? '上課日' : '假日'}</div>
+      <div className="section-title">{dayType === 'school' ? '上課特別項目' : '假日特別項目'}</div>
       <div className="item-list">
         {specialItems.map((item) => (
           <div className="item-row" key={item}>
             <div className="item-label">{item}</div>
-            {/* 3. 注意這裡一樣改用安全的 scores[item] */}
             <GradeChips value={scores[item] || null} onChange={(g) => onScoreChange(childId, selectedDate, item, g)} />
           </div>
         ))}
       </div>
-      <div className="recorded-note">由 {day.recordedBy || whoAmI} 紀錄・即時同步</div>
+      <div className="recorded-note">最後由【 {day.recordedBy || whoAmI} 】紀錄・雲端同步中</div>
     </div>
   );
 }
+
 /* ---------------------------------------------------------
    整週補登畫面
 --------------------------------------------------------- */
@@ -585,7 +629,7 @@ function WeekCatchUpView({ childId, childData, overrides, onScoreChange, weekMon
   const dateStrs = getWeekDateStrs(weekMonday);
   const [sheet, setSheet] = useState(null);
 
-  const cellValue = (item, ds) => (childData.days[ds]?.scores || {})[item] || null;
+  const cellValue = (item, ds) => (childData?.days?.[ds]?.scores || {})[item] || null;
 
   return (
     <div className="panel">
@@ -596,7 +640,7 @@ function WeekCatchUpView({ childId, childData, overrides, onScoreChange, weekMon
         onThisWeek={() => setWeekMonday(toDateStr(getMonday(new Date())))}
       />
 
-      <div className="section-title">共同</div>
+      <div className="section-title">共同項目</div>
       <div className="week-table-wrap">
         <table className="week-table">
           <thead>
@@ -682,19 +726,19 @@ function SummaryCard({ child, totals }) {
     <div className="summary-card" style={{ borderColor: child.color }}>
       <div className="summary-card-head" style={{ color: child.color }}>{child.name}</div>
       <div className="summary-total" style={{ color: child.color }}>{totals.grandTotal > 0 ? `+${totals.grandTotal}` : totals.grandTotal}</div>
-      <div className="summary-sub">每日 {totals.dailyTotal >= 0 ? `+${totals.dailyTotal}` : totals.dailyTotal}　加減分 {totals.bonusTotal >= 0 ? `+${totals.bonusTotal}` : totals.bonusTotal}</div>
+      <div className="summary-sub">每日 {totals.dailyTotal >= 0 ? `+${totals.dailyTotal}` : totals.dailyTotal} ｜ 加減分 {totals.bonusTotal >= 0 ? `+${totals.bonusTotal}` : totals.bonusTotal}</div>
     </div>
   );
 }
 
 function BreakdownList({ totals }) {
   const itemTotals = totals?.itemTotals || {};
-  const rows = ALL_ITEMS_ORDER.filter((item) => Object.prototype.hasOwnProperty.call(totals.itemTotals, item));
-  if (rows.length === 0) return <div className="empty-note">這週還沒有項目紀錄</div>;
+  const rows = ALL_ITEMS_ORDER.filter((item) => Object.prototype.hasOwnProperty.call(itemTotals, item));
+  if (rows.length === 0) return <div className="empty-note">這週尚無紀錄</div>;
   return (
     <div className="breakdown-list">
       {rows.map((item) => {
-        const v = totals.itemTotals[item];
+        const v = itemTotals[item];
         return (
           <div className="breakdown-row" key={item}>
             <span>{item}</span>
@@ -751,7 +795,7 @@ function SummaryView({ data, overrides, weekMonday, setWeekMonday }) {
         <SummaryCard child={CHILDREN[1]} totals={totalsQQ} />
       </div>
 
-      <div className="breakdown-grid">
+      <div className="breakdown-grid" style={{ marginTop: 12 }}>
         <div>
           <div className="section-title" style={{ color: CHILDREN[0].color }}>多多細項</div>
           <BreakdownList totals={totalsDD} />
@@ -776,14 +820,14 @@ function SummaryView({ data, overrides, weekMonday, setWeekMonday }) {
         </div>
       </div>
 
-      <div className="section-title">近八週趨勢</div>
+      <div className="section-title">近八週總分趨勢</div>
       <div className="trend-chart">
         <MiniLineChart data={trendData} seriesKeys={['多多', '球球']} colors={[CHILDREN[0].color, CHILDREN[1].color]} height={200} />
       </div>
       <ChartLegend items={[{ label: '多多', color: CHILDREN[0].color }, { label: '球球', color: CHILDREN[1].color }]} />
 
       <div className="trend-header-row">
-        <div className="section-title" style={{ margin: '20px 0 0' }}>細項趨勢</div>
+        <div className="section-title" style={{ margin: '20px 0 0' }}>單項分數趨勢</div>
         <select className="item-select" value={trendItem} onChange={(e) => setTrendItem(e.target.value)}>
           <optgroup label="共同">
             {COMMON_ITEMS.map((it) => <option key={it} value={it}>{it}</option>)}
@@ -817,29 +861,29 @@ function BonusView({ childId, childData, whoAmI, onAdd, onDelete }) {
   const submit = () => {
     const n = Number(points);
     if (!points || n === 0) { setFormError('請輸入不為 0 的分數'); return; }
-    if (!reason.trim()) { setFormError('請填寫原因'); return; }
+    if (!reason.trim()) { setFormError('請填寫加減分原因'); return; }
     setFormError('');
     onAdd(childId, { date, points: n, reason: reason.trim() });
     setPoints('');
     setReason('');
   };
 
-  const sorted = [...(childData.bonuses || [])].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...(childData?.bonuses || [])].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className="panel">
       <div className="section-title">新增加減分</div>
       <div className="bonus-form">
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input type="number" className="input small" placeholder="分數 (可負)" value={points} onChange={(e) => setPoints(e.target.value)} />
-        <input type="text" className="input" placeholder="原因，例如：幫忙洗碗" value={reason} onChange={(e) => setReason(e.target.value)} />
+        <input type="number" className="input" placeholder="分數 (正數加分，負數扣分)" value={points} onChange={(e) => setPoints(e.target.value)} />
+        <input type="text" className="input" placeholder="原因，例如：主動收玩具、幫忙做家事" value={reason} onChange={(e) => setReason(e.target.value)} />
         {formError && <div className="form-error">{formError}</div>}
-        <button className="add-btn" onClick={submit}>＋ 新增</button>
+        <button className="add-btn" onClick={submit}>＋ 確認紀錄</button>
       </div>
 
-      <div className="section-title">歷史紀錄</div>
+      <div className="section-title">加減分歷史紀錄</div>
       {sorted.length === 0 ? (
-        <div className="empty-note">還沒有加減分紀錄</div>
+        <div className="empty-note">尚無加減分紀錄</div>
       ) : (
         <div className="bonus-list">
           {sorted.map((b) => (
@@ -873,9 +917,9 @@ function TotalCard({ child, stats, exchangeRate }) {
     <div className="summary-card total-card" style={{ borderColor: child.color }}>
       <div className="summary-card-head" style={{ color: child.color }}>{child.emoji} {child.name}</div>
       <div className="summary-total" style={{ color: child.color }}>{stats.total.toLocaleString()}</div>
-      <div className="summary-sub">總分</div>
+      <div className="summary-sub">累計總得分</div>
       <div className="savings-amount">${(stats.total * exchangeRate).toLocaleString()}</div>
-      <div className="summary-sub">存款（總分 × {exchangeRate}）</div>
+      <div className="summary-sub">零用金存款（1點 = ${exchangeRate}）</div>
     </div>
   );
 }
@@ -894,7 +938,7 @@ function TotalView({
 
   const statsDD = allTimeTotalForChild(data.duoduo, Number(baseScores.duoduo) || 0);
   const statsQQ = allTimeTotalForChild(data.qiuqiu, Number(baseScores.qiuqiu) || 0);
-  const activeChildData = data[activeChild];
+  const activeChildData = data[activeChild] || emptyChildData();
 
   const computedPoints = mode === 'money'
     ? Math.ceil((Number(amount) || 0) / (Number(exchangeRate) || 1))
@@ -902,7 +946,7 @@ function TotalView({
 
   const submit = () => {
     if (!amount || Number(amount) <= 0) { setFormError('請先輸入大於 0 的數字'); return; }
-    if (!reason.trim()) { setFormError('請填寫扣點原因'); return; }
+    if (!reason.trim()) { setFormError('請填寫兌換/扣點原因'); return; }
     if (computedPoints <= 0) { setFormError('計算出的扣點數必須大於 0'); return; }
     setFormError('');
     onAddDeduction(activeChild, {
@@ -923,45 +967,45 @@ function TotalView({
       </div>
 
       <button className="settings-toggle" onClick={() => setShowSettings((v) => !v)}>
-        {showSettings ? '收起設定' : '調整匯率／起始總分'}
+        {showSettings ? '▲ 隱藏設定' : '⚙️ 調整匯率 / 起始初始分數'}
       </button>
       {showSettings && (
         <div className="settings-panel">
           <div className="settings-row">
-            <span>匯率（1點 = $）</span>
+            <span>兌換匯率（1 點 = 幾元）</span>
             <input className="input small" type="number" value={exchangeRate} onChange={(e) => onExchangeRateChange(e.target.value)} />
           </div>
           {CHILDREN.map((c) => (
             <div className="settings-row" key={c.id}>
-              <span>{c.emoji} {c.name} 起始總分</span>
+              <span>{c.emoji} {c.name} 起始底分</span>
               <input className="input small" type="number" value={baseScores[c.id]} onChange={(e) => onBaseScoreChange(c.id, e.target.value)} />
             </div>
           ))}
         </div>
       )}
 
-      <div className="section-title">扣點 / 扣錢</div>
+      <div className="section-title">兌換獎勵 / 扣點紀錄</div>
       <ChildSwitch activeId={activeChild} onChange={setActiveChild} />
 
       <div className="mode-toggle" style={{ padding: '12px 0 0' }}>
-        <button className={`mode-btn${mode === 'points' ? ' active' : ''}`} onClick={() => setMode('points')}>直接扣點</button>
-        <button className={`mode-btn${mode === 'money' ? ' active' : ''}`} onClick={() => setMode('money')}>用金額換算</button>
+        <button className={`mode-btn${mode === 'points' ? ' active' : ''}`} onClick={() => setMode('points')}>直接扣除點數</button>
+        <button className={`mode-btn${mode === 'money' ? ' active' : ''}`} onClick={() => setMode('money')}>用欲換金額換算</button>
       </div>
 
       <div className="bonus-form" style={{ marginTop: 10 }}>
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input type="number" className="input" placeholder={mode === 'points' ? '扣除點數' : '金額 $'} value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <input type="number" className="input" placeholder={mode === 'points' ? '欲扣除點數' : '欲兌換金額 ($)'} value={amount} onChange={(e) => setAmount(e.target.value)} />
         {mode === 'money' && amount ? (
-          <div className="convert-preview">= 扣 <b>{computedPoints}</b> 點（無條件進位）</div>
+          <div className="convert-preview">= 將扣除 <b>{computedPoints}</b> 點（無條件進位）</div>
         ) : null}
-        <input type="text" className="input" placeholder="原因，例如：換零用錢 / 做壞事" value={reason} onChange={(e) => setReason(e.target.value)} />
+        <input type="text" className="input" placeholder="原因，例如：買樂高玩具、換現金" value={reason} onChange={(e) => setReason(e.target.value)} />
         {formError && <div className="form-error">{formError}</div>}
-        <button className="add-btn deduct-btn" onClick={submit}>＋ 確認扣點</button>
+        <button className="add-btn deduct-btn" onClick={submit}>＋ 確認兌換扣點</button>
       </div>
 
-      <div className="section-title">扣點紀錄</div>
+      <div className="section-title">兌換歷史紀錄</div>
       {sortedDeductions.length === 0 ? (
-        <div className="empty-note">還沒有扣點紀錄</div>
+        <div className="empty-note">尚無兌換扣點紀錄</div>
       ) : (
         <div className="bonus-list">
           {sortedDeductions.map((d) => (
@@ -1007,14 +1051,15 @@ function App() {
 
   const fetchAll = async (isInitial) => {
     const [dd, qq, ov, base, rate] = await Promise.all([
-      dbGet('records-duoduo', emptyChildData()),
-      dbGet('records-qiuqiu', emptyChildData()),
+      dbGet(STORAGE_KEYS.duoduo, emptyChildData()),
+      dbGet(STORAGE_KEYS.qiuqiu, emptyChildData()),
       dbGet('daytype-overrides', {}),
       dbGet('settings-base-score', { duoduo: 0, qiuqiu: 0 }),
       dbGet('settings-exchange-rate', 5),
     ]);
     const anyError = [dd, qq, ov, base, rate].some((r) => r && r.__error);
     setSyncStatus(anyError ? 'error' : 'ok');
+    
     setData({
       duoduo: { ...emptyChildData(), ...(dd && dd.__error ? dd.fallback : dd) },
       qiuqiu: { ...emptyChildData(), ...(qq && qq.__error ? qq.fallback : qq) },
@@ -1070,7 +1115,7 @@ function App() {
 
   const handleAddDeduction = (childId, entry) => {
     setData((prev) => {
-      const childData = prev[childId];
+      const childData = prev[childId] || emptyChildData();
       const newDeduction = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry, recordedBy: whoAmI };
       const newChildData = { ...childData, deductions: [newDeduction, ...(childData.deductions || [])] };
       persistChild(childId, newChildData);
@@ -1079,7 +1124,7 @@ function App() {
   };
   const handleDeleteDeduction = (childId, id) => {
     setData((prev) => {
-      const childData = prev[childId];
+      const childData = prev[childId] || emptyChildData();
       const newChildData = { ...childData, deductions: (childData.deductions || []).filter((d) => d.id !== id) };
       persistChild(childId, newChildData);
       return { ...prev, [childId]: newChildData };
@@ -1114,17 +1159,17 @@ function App() {
 
   const handleAddBonus = (childId, entry) => {
     setData((prev) => {
-      const childData = prev[childId];
+      const childData = prev[childId] || emptyChildData();
       const newBonus = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry, recordedBy: whoAmI };
-      const newChildData = { ...childData, bonuses: [newBonus, ...childData.bonuses] };
+      const newChildData = { ...childData, bonuses: [newBonus, ...(childData.bonuses || [])] };
       persistChild(childId, newChildData);
       return { ...prev, [childId]: newChildData };
     });
   };
   const handleDeleteBonus = (childId, id) => {
     setData((prev) => {
-      const childData = prev[childId];
-      const newChildData = { ...childData, bonuses: childData.bonuses.filter((b) => b.id !== id) };
+      const childData = prev[childId] || emptyChildData();
+      const newChildData = { ...childData, bonuses: (childData.bonuses || []).filter((b) => b.id !== id) };
       persistChild(childId, newChildData);
       return { ...prev, [childId]: newChildData };
     });
@@ -1137,11 +1182,11 @@ function App() {
   return (
     <div className="app-root">
       {loading ? (
-        <div className="loading-screen">載入中...</div>
+        <div className="loading-screen">✨ 繽紛記分本載入中...</div>
       ) : (
         <>
           <div className="header">
-            <div className="header-title"><span className="b">多多</span> ＆ <span className="r">球球</span> 記分本</div>
+            <div className="header-title">✨ <span className="b">多多</span> ＆ <span className="r">球球</span> 記分本 ✨</div>
             <div className="header-right">
               <div className={`sync-dot ${syncStatus}`} title={syncStatus === 'ok' ? '雲端同步正常' : syncStatus === 'error' ? '無法連線雲端資料庫' : '連線中...'} />
               <div className="whoami">
@@ -1152,7 +1197,7 @@ function App() {
             </div>
           </div>
           {syncStatus === 'error' && (
-            <div className="sync-error-banner">⚠️ 無法連線到雲端資料庫，資料可能沒有同步，請檢查 Firebase 網址與規則設定</div>
+            <div className="sync-error-banner">⚠️ 無法連線到雲端資料庫，請檢查網路連線與 Firebase 設定</div>
           )}
 
           {activeTab === 'daily' && (
@@ -1235,10 +1280,10 @@ function App() {
               <span className="nav-glyph">📊</span><span className="label">週統整</span>
             </button>
             <button className={`nav-btn${activeTab === 'bonus' ? ' active' : ''}`} onClick={() => setActiveTab('bonus')}>
-              <span className="nav-glyph">✍</span><span className="label">加減分</span>
+              <span className="nav-glyph">✍️</span><span className="label">加減分</span>
             </button>
             <button className={`nav-btn${activeTab === 'total' ? ' active' : ''}`} onClick={() => setActiveTab('total')}>
-              <span className="nav-glyph">🥇</span><span className="label">總分</span>
+              <span className="nav-glyph">🏆</span><span className="label">總分</span>
             </button>
           </div>
         </>
