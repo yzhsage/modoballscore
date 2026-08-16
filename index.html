@@ -85,9 +85,9 @@
   }
   .child-theme .section-title { color: var(--accent-dark, #7C3AED); }
   .child-theme .item-row { border-color: var(--accent-soft, #E2E8F0); background: #fff; }
-  .child-theme .icon-btn { border-color: #2D3142; color: #2D3142; background: #fff; box-shadow: 0 3px 0 #2D3142; }
-  .child-theme .today-btn { border-color: #2D3142; color: #2D3142; background: #FFD166; box-shadow: 0 3px 0 #2D3142; }
-  .child-theme .add-btn { background: linear-gradient(135deg, #06D6A0, #059669); box-shadow: 0 4px 0 #047857; }
+  .child-theme .icon-btn { border-color: var(--accent, #2D3142); color: var(--accent-dark, #2D3142); background: #fff; box-shadow: 0 3px 0 var(--accent, #2D3142); }
+  .child-theme .today-btn { border-color: var(--accent, #2D3142); color: var(--accent-dark, #2D3142); background: var(--accent-soft, #FFD166); box-shadow: 0 3px 0 var(--accent, #2D3142); }
+  .child-theme .add-btn { background: linear-gradient(135deg, var(--accent, #06D6A0), var(--accent-dark, #059669)); box-shadow: 0 4px 0 var(--accent-dark, #047857); }
 
   /* 兒童切換 Pill */
   .child-switch { display: flex; gap: 14px; padding: 16px 10px 6px; }
@@ -176,7 +176,7 @@
   .grid-cell.disabled { background: repeating-linear-gradient(45deg, #F1F5F9, #F1F5F9 4px, #E2E8F0 4px, #E2E8F0 8px); border: none; width: 36px; height: 32px; display: inline-flex; align-items: center; justify-content: center; color: transparent; }
 
   /* Sheet 彈出選擇器 */
-  .sheet-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; z-index: 30; }
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; z-index: 30; }
   .sheet { background: #fff; width: 100%; max-width: 500px; border-radius: 28px 28px 0 0; padding: 22px; border-top: 6px solid; border-image: linear-gradient(90deg, #FF6B6B, #FFD166, #06D6A0, #118AB2, #9D4EDD) 1; box-shadow: 0 -10px 25px rgba(0,0,0,0.15); }
   .sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
   .sheet-item { font-size: 18px; font-weight: 700; color: #1E293B; }
@@ -240,6 +240,7 @@
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 500px; background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-top: 4px solid transparent; border-image: linear-gradient(90deg, #38BDF8, #A855F7, #FFD166, #10B981, #FB7185) 1;
     display: flex; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     z-index: 10;
