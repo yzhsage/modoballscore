@@ -34,12 +34,15 @@
     background-position: 5% 10%, 92% 8%, 75% 50%, 12% 70%, 60% 90%;
     background-repeat: repeat;
     background-size: 220px 220px, 280px 280px, 240px 240px, 260px 260px, 200px 200px;
-    min-height: 100vh;
+    height: 100dvh;
     max-width: 500px;
     margin: 0 auto;
-    padding-bottom: 90px;
+    padding-bottom: 0;
     position: relative;
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
   .num { font-family: 'Fredoka', sans-serif; font-weight: 600; }
 
@@ -50,7 +53,7 @@
     border-bottom: 4px solid;
     border-image: linear-gradient(90deg, #FF6B6B, #FFD166, #06D6A0, #118AB2, #9D4EDD) 1;
     background: rgba(255, 255, 255, 0.95);
-    position: sticky; top: 0; z-index: 5;
+    flex-shrink: 0;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
   }
   .header-title { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
@@ -237,13 +240,12 @@
 
   /* 底部導覽列 - Rainbow Glow */
   .bottom-nav {
-    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 500px; background: rgba(255, 255, 255, 0.95);
+    width: 100%; background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-top: 4px solid transparent; border-image: linear-gradient(90deg, #38BDF8, #A855F7, #FFD166, #10B981, #FB7185) 1;
     display: flex; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
-    z-index: 10;
+    flex-shrink: 0;
     box-shadow: 0 -5px 20px rgba(0,0,0,0.08);
   }
   .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 6px 0; cursor: pointer; color: #94A3B8; transition: all .15s ease; }
@@ -261,7 +263,8 @@
   .mode-btn.active { background: #2D3142; color: #fff; }
   .mode-btn:active { transform: translateY(2px); }
 
-  .loading-screen { display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Fredoka', sans-serif; color: #64748B; font-size: 18px; font-weight: 700; }
+  .loading-screen { display: flex; align-items: center; justify-content: center; height: 100%; font-family: 'Fredoka', sans-serif; color: #64748B; font-size: 18px; font-weight: 700; }
+  .main-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
@@ -286,16 +289,57 @@
   });
 </script>
 <script type="text/babel" data-presets="react">
-const { useState, useEffect, useMemo } = React;
+const { useState, useEffect, useMemo, useRef } = React;
 
 /* ---------------------------------------------------------
    雲端資料庫 (Firebase Realtime Database)
 --------------------------------------------------------- */
 const FIREBASE_URL = 'https://modoballscore-default-rtdb.asia-southeast1.firebasedatabase.app';
 
+const DB_TIMEOUT_MS = 10000;
+const LOCAL_CACHE_PREFIX = 'modoballscore-cache-v2:';
+const LOCAL_PENDING_KEY = 'modoballscore-pending-v2';
+function safeJsonParse(value, fallback) {
+  try { return value == null ? fallback : JSON.parse(value); }
+  catch (e) { return fallback; }
+}
+function readLocalCache(key, fallback) {
+  try { return safeJsonParse(localStorage.getItem(LOCAL_CACHE_PREFIX + key), fallback); }
+  catch (e) { return fallback; }
+}
+function writeLocalCache(key, value) {
+  try { localStorage.setItem(LOCAL_CACHE_PREFIX + key, JSON.stringify(value)); return true; }
+  catch (e) { console.error('local cache write error', key, e); return false; }
+}
+function readPendingWrites() {
+  try {
+    const raw = safeJsonParse(localStorage.getItem(LOCAL_PENDING_KEY), {});
+    return Object.fromEntries(Object.entries(raw || {}).map(([key, value]) => {
+      if (value && (value.type === 'put' || value.type === 'patch')) return [key, value];
+      return [key, { type: 'put', value, snapshot: value }];
+    }));
+  } catch (e) { return {}; }
+}
+function writePendingWrites(value) {
+  try { localStorage.setItem(LOCAL_PENDING_KEY, JSON.stringify(value)); return true; }
+  catch (e) { console.error('pending write cache error', e); return false; }
+}
+function finiteNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DB_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function dbGet(key, fallback) {
   try {
-    const res = await fetch(`${FIREBASE_URL}/${key}.json`);
+    const res = await fetchWithTimeout(`${FIREBASE_URL}/${key}.json`);
     if (!res.ok) throw new Error('fetch failed');
     const val = await res.json();
     return val === null || val === undefined ? fallback : val;
@@ -306,7 +350,7 @@ async function dbGet(key, fallback) {
 }
 async function dbSet(key, value) {
   try {
-    const res = await fetch(`${FIREBASE_URL}/${key}.json`, {
+    const res = await fetchWithTimeout(`${FIREBASE_URL}/${key}.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(value),
@@ -315,6 +359,20 @@ async function dbSet(key, value) {
     return true;
   } catch (e) {
     console.error('dbSet error', key, e);
+    return false;
+  }
+}
+async function dbPatch(updates) {
+  try {
+    const res = await fetchWithTimeout(`${FIREBASE_URL}/.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error('patch failed');
+    return true;
+  } catch (e) {
+    console.error('dbPatch error', e);
     return false;
   }
 }
@@ -356,7 +414,8 @@ const getMonday = (d) => { const day = d.getDay(); const diff = day === 0 ? -6 :
 const weekdayIdx = (d) => (d.getDay() + 6) % 7;
 
 function getDayType(dateStr, overrides = {}) {
-  if (overrides[dateStr]) return overrides[dateStr];
+  const safeOverrides = overrides || {};
+  if (safeOverrides[dateStr]) return safeOverrides[dateStr];
   const idx = weekdayIdx(parseDateStr(dateStr));
   return idx >= 5 ? 'holiday' : 'school';
 }
@@ -378,26 +437,37 @@ function dateLabel(dateStr) {
 function emptyChildData() { return { days: {}, bonuses: [], deductions: [] }; }
 
 function allTimeTotalForChild(childData = emptyChildData(), base = 0) {
+  const safeData = childData || emptyChildData();
+  const safeDays = safeData.days || {};
+  const safeBonuses = Array.isArray(safeData.bonuses) ? safeData.bonuses : [];
+  const safeDeductions = Array.isArray(safeData.deductions) ? safeData.deductions : [];
+  const safeBaseValue = finiteNumber(base);
+  const safeBase = safeBaseValue === null ? 0 : safeBaseValue;
+
   let itemScore = 0;
-  Object.values(childData.days || {}).forEach((day) => {
-    Object.values(day.scores || {}).forEach((grade) => {
-      const pt = GRADE_POINTS[grade];
-      if (pt !== undefined) itemScore += pt;
-    });
+  Object.values(safeDays).forEach((day) => {
+    if (day && day.scores) {
+      Object.values(day.scores).forEach((grade) => {
+        const pt = GRADE_POINTS[grade];
+        if (pt !== undefined) itemScore += pt;
+      });
+    }
   });
-  const bonusScore = (childData.bonuses || []).reduce((s, b) => s + Number(b.points || 0), 0);
-  const deductionScore = (childData.deductions || []).reduce((s, d) => s + Number(d.points || 0), 0);
-  const total = (base || 0) + itemScore + bonusScore - deductionScore;
+  const bonusScore = safeBonuses.reduce((s, b) => { const n = finiteNumber(b?.points); return s + (n === null ? 0 : n); }, 0);
+  const deductionScore = safeDeductions.reduce((s, d) => { const n = finiteNumber(d?.points); return s + (n === null ? 0 : n); }, 0);
+  const total = safeBase + itemScore + bonusScore - deductionScore;
   return { itemScore, bonusScore, deductionScore, total };
 }
 
 function weekTotalForChild(childData = emptyChildData(), mondayStr) {
   const safeChildData = childData || emptyChildData();
+  const safeDays = safeChildData.days || {};
+  const safeBonuses = Array.isArray(safeChildData.bonuses) ? safeChildData.bonuses : [];
   const dateStrs = getWeekDateStrs(mondayStr);
   let dailyTotal = 0;
   const itemTotals = {};
   dateStrs.forEach((ds) => {
-    const day = (safeChildData.days || {})[ds];
+    const day = safeDays[ds];
     if (!day) return;
     Object.entries(day.scores || {}).forEach(([item, grade]) => {
       const pt = GRADE_POINTS[grade];
@@ -406,17 +476,18 @@ function weekTotalForChild(childData = emptyChildData(), mondayStr) {
       itemTotals[item] = (itemTotals[item] || 0) + pt;
     });
   });
-  const bonusEntries = (safeChildData.bonuses || []).filter((b) => dateStrs.includes(b.date));
-  const bonusTotal = bonusEntries.reduce((s, b) => s + Number(b.points || 0), 0);
-  return { dailyTotal, itemTotals, bonusTotal, bonusEntries: bonusEntries.sort((a,b)=>b.date.localeCompare(a.date)), grandTotal: dailyTotal + bonusTotal };
+  const bonusEntries = safeBonuses.filter((b) => b && dateStrs.includes(b.date));
+  const bonusTotal = bonusEntries.reduce((s, b) => { const n = finiteNumber(b?.points); return s + (n === null ? 0 : n); }, 0);
+  return { dailyTotal, itemTotals, bonusTotal, bonusEntries: bonusEntries.sort((a,b)=>(b.date || '').localeCompare(a.date || '')), grandTotal: dailyTotal + bonusTotal };
 }
 
 function itemWeekTotal(childData = emptyChildData(), mondayStr, item) {
-  if (!childData || !childData.days) return 0;
+  const safeChildData = childData || emptyChildData();
+  const safeDays = safeChildData.days || {};
   const dateStrs = getWeekDateStrs(mondayStr);
   let total = 0;
   dateStrs.forEach((ds) => {
-    const grade = childData.days[ds]?.scores?.[item];
+    const grade = safeDays[ds]?.scores?.[item];
     const pt = GRADE_POINTS[grade];
     if (pt !== undefined) total += pt;
   });
@@ -595,7 +666,7 @@ function DailyRecordView({ childId, childData, overrides, whoAmI, onScoreChange,
         onNext={() => setSelectedDate(toDateStr(addDays(parseDateStr(selectedDate), 1)))}
         onToday={() => setSelectedDate(toDateStr(new Date()))}
         dayType={dayType}
-        overrideActive={overrides[selectedDate]}
+        overrideActive={overrides?.[selectedDate]}
         onSetOverride={(val) => onOverride(selectedDate, val)}
       />
 
@@ -723,11 +794,14 @@ function WeekCatchUpView({ childId, childData, overrides, onScoreChange, weekMon
    週統整畫面
 --------------------------------------------------------- */
 function SummaryCard({ child, totals }) {
+  const grandTotal = totals?.grandTotal || 0;
+  const dailyTotal = totals?.dailyTotal || 0;
+  const bonusTotal = totals?.bonusTotal || 0;
   return (
     <div className="summary-card" style={{ borderColor: child.color }}>
       <div className="summary-card-head" style={{ color: child.color }}>{child.name}</div>
-      <div className="summary-total" style={{ color: child.color }}>{totals.grandTotal > 0 ? `+${totals.grandTotal}` : totals.grandTotal}</div>
-      <div className="summary-sub">每日 {totals.dailyTotal >= 0 ? `+${totals.dailyTotal}` : totals.dailyTotal} ｜ 加減分 {totals.bonusTotal >= 0 ? `+${totals.bonusTotal}` : totals.bonusTotal}</div>
+      <div className="summary-total" style={{ color: child.color }}>{grandTotal > 0 ? `+${grandTotal}` : grandTotal}</div>
+      <div className="summary-sub">每日 {dailyTotal >= 0 ? `+${dailyTotal}` : dailyTotal} ｜ 加減分 {bonusTotal >= 0 ? `+${bonusTotal}` : bonusTotal}</div>
     </div>
   );
 }
@@ -739,7 +813,7 @@ function BreakdownList({ totals }) {
   return (
     <div className="breakdown-list">
       {rows.map((item) => {
-        const v = itemTotals[item];
+        const v = itemTotals[item] || 0;
         return (
           <div className="breakdown-row" key={item}>
             <span>{item}</span>
@@ -751,9 +825,9 @@ function BreakdownList({ totals }) {
   );
 }
 
-function SummaryView({ data, overrides, weekMonday, setWeekMonday }) {
-  const totalsDD = useMemo(() => weekTotalForChild(data.duoduo, weekMonday), [data.duoduo, weekMonday]);
-  const totalsQQ = useMemo(() => weekTotalForChild(data.qiuqiu, weekMonday), [data.qiuqiu, weekMonday]);
+function SummaryView({ data, weekMonday, setWeekMonday }) {
+  const totalsDD = useMemo(() => weekTotalForChild(data?.duoduo, weekMonday), [data?.duoduo, weekMonday]);
+  const totalsQQ = useMemo(() => weekTotalForChild(data?.qiuqiu, weekMonday), [data?.qiuqiu, weekMonday]);
   const [trendItem, setTrendItem] = useState(COMMON_ITEMS[0]);
 
   const trendData = useMemo(() => {
@@ -762,8 +836,8 @@ function SummaryView({ data, overrides, weekMonday, setWeekMonday }) {
     for (let i = 7; i >= 0; i--) {
       const m = addDays(monday, -7 * i);
       const mStr = toDateStr(m);
-      const dd = weekTotalForChild(data.duoduo, mStr);
-      const qq = weekTotalForChild(data.qiuqiu, mStr);
+      const dd = weekTotalForChild(data?.duoduo, mStr);
+      const qq = weekTotalForChild(data?.qiuqiu, mStr);
       arr.push({ label: `${m.getMonth() + 1}/${m.getDate()}`, 多多: dd.grandTotal, 球球: qq.grandTotal });
     }
     return arr;
@@ -775,8 +849,8 @@ function SummaryView({ data, overrides, weekMonday, setWeekMonday }) {
     for (let i = 7; i >= 0; i--) {
       const m = addDays(monday, -7 * i);
       const mStr = toDateStr(m);
-      const dd = itemWeekTotal(data.duoduo, mStr, trendItem);
-      const qq = itemWeekTotal(data.qiuqiu, mStr, trendItem);
+      const dd = itemWeekTotal(data?.duoduo, mStr, trendItem);
+      const qq = itemWeekTotal(data?.qiuqiu, mStr, trendItem);
       arr.push({ label: `${m.getMonth() + 1}/${m.getDate()}`, 多多: dd, 球球: qq });
     }
     return arr;
@@ -860,8 +934,8 @@ function BonusView({ childId, childData, whoAmI, onAdd, onDelete }) {
   const [formError, setFormError] = useState('');
 
   const submit = () => {
-    const n = Number(points);
-    if (!points || n === 0) { setFormError('請輸入不為 0 的分數'); return; }
+    const n = finiteNumber(points);
+    if (n === null || n === 0) { setFormError('請輸入不為 0 的有效分數'); return; }
     if (!reason.trim()) { setFormError('請填寫加減分原因'); return; }
     setFormError('');
     onAdd(childId, { date, points: n, reason: reason.trim() });
@@ -869,14 +943,15 @@ function BonusView({ childId, childData, whoAmI, onAdd, onDelete }) {
     setReason('');
   };
 
-  const sorted = [...(childData?.bonuses || [])].sort((a, b) => b.date.localeCompare(a.date));
+  const safeBonuses = Array.isArray(childData?.bonuses) ? childData.bonuses : [];
+  const sorted = [...safeBonuses].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   return (
     <div className="panel">
       <div className="section-title">新增加減分</div>
       <div className="bonus-form">
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input type="number" className="input" placeholder="分數 (正數加分，負數扣分)" value={points} onChange={(e) => setPoints(e.target.value)} />
+        <input type="number" min="-1000000" max="1000000" step="any" className="input" placeholder="分數 (正數加分，負數扣分)" value={points} onChange={(e) => setPoints(e.target.value)} />
         <input type="text" className="input" placeholder="原因，例如：主動收玩具、幫忙做家事" value={reason} onChange={(e) => setReason(e.target.value)} />
         {formError && <div className="form-error">{formError}</div>}
         <button className="add-btn" onClick={submit}>＋ 確認紀錄</button>
@@ -914,13 +989,19 @@ function BonusView({ childId, childData, whoAmI, onAdd, onDelete }) {
    總分／存款／扣點畫面
 --------------------------------------------------------- */
 function TotalCard({ child, stats, exchangeRate }) {
+  const totalNumber = finiteNumber(stats?.total);
+  const safeTotal = totalNumber === null ? 0 : totalNumber;
+  const rateNumber = finiteNumber(exchangeRate);
+  const safeRate = rateNumber !== null && rateNumber > 0 ? rateNumber : 1;
+  const savings = safeTotal * safeRate;
+
   return (
     <div className="summary-card total-card" style={{ borderColor: child.color }}>
       <div className="summary-card-head" style={{ color: child.color }}>{child.emoji} {child.name}</div>
-      <div className="summary-total" style={{ color: child.color }}>{stats.total.toLocaleString()}</div>
+      <div className="summary-total" style={{ color: child.color }}>{safeTotal.toLocaleString()}</div>
       <div className="summary-sub">累計總得分</div>
-      <div className="savings-amount">${(stats.total * exchangeRate).toLocaleString()}</div>
-      <div className="summary-sub">零用金存款（1點 = ${exchangeRate}）</div>
+      <div className="savings-amount">${savings.toLocaleString()}</div>
+      <div className="summary-sub">零用金存款（1點 = ${safeRate}）</div>
     </div>
   );
 }
@@ -937,16 +1018,21 @@ function TotalView({
   const [confirmId, setConfirmId] = useState(null);
   const [formError, setFormError] = useState('');
 
-  const statsDD = allTimeTotalForChild(data.duoduo, Number(baseScores.duoduo) || 0);
-  const statsQQ = allTimeTotalForChild(data.qiuqiu, Number(baseScores.qiuqiu) || 0);
-  const activeChildData = data[activeChild] || emptyChildData();
+  const rateNumber = finiteNumber(exchangeRate);
+  const safeRate = rateNumber !== null && rateNumber > 0 ? rateNumber : 1;
+  const amountNumber = finiteNumber(amount);
+  const numAmount = amountNumber === null ? 0 : amountNumber;
+
+  const statsDD = allTimeTotalForChild(data?.duoduo, baseScores?.duoduo);
+  const statsQQ = allTimeTotalForChild(data?.qiuqiu, baseScores?.qiuqiu);
+  const activeChildData = data?.[activeChild] || emptyChildData();
 
   const computedPoints = mode === 'money'
-    ? Math.ceil((Number(amount) || 0) / (Number(exchangeRate) || 1))
-    : Math.ceil(Number(amount) || 0);
+    ? Math.ceil(numAmount / safeRate)
+    : Math.ceil(numAmount);
 
   const submit = () => {
-    if (!amount || Number(amount) <= 0) { setFormError('請先輸入大於 0 的數字'); return; }
+    if (amountNumber === null || amountNumber <= 0) { setFormError('請先輸入大於 0 的數字'); return; }
     if (!reason.trim()) { setFormError('請填寫兌換/扣點原因'); return; }
     if (computedPoints <= 0) { setFormError('計算出的扣點數必須大於 0'); return; }
     setFormError('');
@@ -958,13 +1044,14 @@ function TotalView({
     setReason('');
   };
 
-  const sortedDeductions = [...(activeChildData.deductions || [])].sort((a, b) => b.date.localeCompare(a.date));
+  const safeDeductions = Array.isArray(activeChildData?.deductions) ? activeChildData.deductions : [];
+  const sortedDeductions = [...safeDeductions].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   return (
     <div className="panel">
       <div className="summary-cards">
-        <TotalCard child={CHILDREN[0]} stats={statsDD} exchangeRate={Number(exchangeRate) || 0} />
-        <TotalCard child={CHILDREN[1]} stats={statsQQ} exchangeRate={Number(exchangeRate) || 0} />
+        <TotalCard child={CHILDREN[0]} stats={statsDD} exchangeRate={exchangeRate} />
+        <TotalCard child={CHILDREN[1]} stats={statsQQ} exchangeRate={exchangeRate} />
       </div>
 
       <button className="settings-toggle" onClick={() => setShowSettings((v) => !v)}>
@@ -974,12 +1061,12 @@ function TotalView({
         <div className="settings-panel">
           <div className="settings-row">
             <span>兌換匯率（1 點 = 幾元）</span>
-            <input className="input small" type="number" value={exchangeRate} onChange={(e) => onExchangeRateChange(e.target.value)} />
+            <input className="input small" type="number" min="0.01" step="0.01" value={exchangeRate ?? ''} onChange={(e) => onExchangeRateChange(e.target.value)} />
           </div>
           {CHILDREN.map((c) => (
             <div className="settings-row" key={c.id}>
               <span>{c.emoji} {c.name} 起始底分</span>
-              <input className="input small" type="number" value={baseScores[c.id]} onChange={(e) => onBaseScoreChange(c.id, e.target.value)} />
+              <input className="input small" type="number" min="-1000000" max="1000000" step="any" value={baseScores?.[c.id] ?? ''} onChange={(e) => onBaseScoreChange(c.id, e.target.value)} />
             </div>
           ))}
         </div>
@@ -995,8 +1082,8 @@ function TotalView({
 
       <div className="bonus-form" style={{ marginTop: 10 }}>
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input type="number" className="input" placeholder={mode === 'points' ? '欲扣除點數' : '欲兌換金額 ($)'} value={amount} onChange={(e) => setAmount(e.target.value)} />
-        {mode === 'money' && amount ? (
+        <input type="number" min="0.01" max="1000000" step="any" className="input" placeholder={mode === 'points' ? '欲扣除點數' : '欲兌換金額 ($)'} value={amount} onChange={(e) => setAmount(e.target.value)} />
+        {mode === 'money' && amount && amountNumber !== null ? (
           <div className="convert-preview">= 將扣除 <b>{computedPoints}</b> 點（無條件進位）</div>
         ) : null}
         <input type="text" className="input" placeholder="原因，例如：買樂高玩具、換現金" value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -1049,6 +1136,29 @@ function App() {
   const [weekMonday, setWeekMonday] = useState(toDateStr(getMonday(new Date())));
   const [baseScores, setBaseScores] = useState({ duoduo: 0, qiuqiu: 0 });
   const [exchangeRate, setExchangeRate] = useState(5);
+  const writeQueues = useRef({});
+  const pendingWrites = useRef(readPendingWrites());
+
+  const hasPending = (key) => Object.prototype.hasOwnProperty.call(pendingWrites.current, key);
+  const applyRemoteOrLocal = (key, remote, fallback) => {
+    if (hasPending(key)) {
+      const pending = pendingWrites.current[key];
+      return pending && pending.snapshot !== undefined ? pending.snapshot : pending;
+    }
+    if (remote && remote.__error) return readLocalCache(key, remote.fallback ?? fallback);
+    const value = remote === null || remote === undefined ? fallback : remote;
+    writeLocalCache(key, value);
+    return value;
+  };
+
+  const enqueueWrite = (key, writer) => {
+    const previous = writeQueues.current[key] || Promise.resolve();
+    const next = previous.catch(() => {}).then(writer);
+    writeQueues.current[key] = next.finally(() => {
+      if (writeQueues.current[key] === next) delete writeQueues.current[key];
+    });
+    return next;
+  };
 
   const fetchAll = async (isInitial) => {
     const [dd, qq, ov, base, rate] = await Promise.all([
@@ -1059,75 +1169,147 @@ function App() {
       dbGet('settings-exchange-rate', 5),
     ]);
     const anyError = [dd, qq, ov, base, rate].some((r) => r && r.__error);
-    setSyncStatus(anyError ? 'error' : 'ok');
+    const hasPendingData = Object.keys(pendingWrites.current).length > 0;
+    setSyncStatus(anyError ? 'error' : hasPendingData ? 'connecting' : 'ok');
     
+    const rawDD = applyRemoteOrLocal(STORAGE_KEYS.duoduo, dd, emptyChildData());
+    const rawQQ = applyRemoteOrLocal(STORAGE_KEYS.qiuqiu, qq, emptyChildData());
+    const rawOverrides = applyRemoteOrLocal('daytype-overrides', ov, {});
+    const rawBase = applyRemoteOrLocal('settings-base-score', base, { duoduo: 0, qiuqiu: 0 });
+    const rawRate = applyRemoteOrLocal('settings-exchange-rate', rate, 5);
+
     setData({
-      duoduo: { ...emptyChildData(), ...(dd && dd.__error ? dd.fallback : dd) },
-      qiuqiu: { ...emptyChildData(), ...(qq && qq.__error ? qq.fallback : qq) },
+      duoduo: {
+        days: rawDD?.days || {},
+        bonuses: Array.isArray(rawDD?.bonuses) ? rawDD.bonuses : [],
+        deductions: Array.isArray(rawDD?.deductions) ? rawDD.deductions : [],
+      },
+      qiuqiu: {
+        days: rawQQ?.days || {},
+        bonuses: Array.isArray(rawQQ?.bonuses) ? rawQQ.bonuses : [],
+        deductions: Array.isArray(rawQQ?.deductions) ? rawQQ.deductions : [],
+      },
     });
-    setOverrides(ov && ov.__error ? ov.fallback : ov);
-    setBaseScores(base && base.__error ? base.fallback : base);
-    setExchangeRate(rate && rate.__error ? rate.fallback : rate);
+    setOverrides(rawOverrides || {});
+    setBaseScores(rawBase || { duoduo: 0, qiuqiu: 0 });
+    const fetchedRate = finiteNumber(rawRate);
+    setExchangeRate(fetchedRate !== null && fetchedRate > 0 ? fetchedRate : 5);
     if (isInitial) setLoading(false);
   };
 
   useEffect(() => {
+    const cachedDD = readLocalCache(STORAGE_KEYS.duoduo, emptyChildData());
+    const cachedQQ = readLocalCache(STORAGE_KEYS.qiuqiu, emptyChildData());
+    const cachedOverrides = readLocalCache('daytype-overrides', {});
+    const cachedBase = readLocalCache('settings-base-score', { duoduo: 0, qiuqiu: 0 });
+    const cachedRate = readLocalCache('settings-exchange-rate', 5);
+    setData({ duoduo: cachedDD, qiuqiu: cachedQQ });
+    setOverrides(cachedOverrides || {});
+    setBaseScores(cachedBase || { duoduo: 0, qiuqiu: 0 });
+    const cachedRateNumber = finiteNumber(cachedRate);
+    setExchangeRate(cachedRateNumber !== null && cachedRateNumber > 0 ? cachedRateNumber : 5);
     fetchAll(true);
-    const interval = setInterval(() => fetchAll(false), 15000);
-    const onVisible = () => { if (document.visibilityState === 'visible') fetchAll(false); };
+    const interval = setInterval(() => { retryPendingWrites(); fetchAll(false); }, 15000);
+    const onVisible = () => { if (document.visibilityState === 'visible') { retryPendingWrites(); fetchAll(false); } };
+    const onOnline = () => { setSyncStatus('connecting'); retryPendingWrites(); fetchAll(false); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
+    window.addEventListener('online', onOnline);
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
+      window.removeEventListener('online', onOnline);
     };
   }, []);
 
-  const persistChild = async (childId, newChildData) => {
-    const ok = await dbSet(STORAGE_KEYS[childId], newChildData);
-    setSyncStatus(ok ? 'ok' : 'error');
+  const finishPending = (key, pendingAtStart, ok) => {
+    if (ok && pendingWrites.current[key] === pendingAtStart) {
+      const nextPending = { ...pendingWrites.current };
+      delete nextPending[key];
+      pendingWrites.current = nextPending;
+      writePendingWrites(nextPending);
+    }
+    setSyncStatus(ok ? (Object.keys(pendingWrites.current).length ? 'connecting' : 'ok') : 'error');
+    return ok;
   };
-  const persistOverrides = async (next) => {
-    const ok = await dbSet('daytype-overrides', next);
-    setSyncStatus(ok ? 'ok' : 'error');
+  const flushPending = (key) => enqueueWrite(key, async () => {
+    const pendingAtStart = pendingWrites.current[key];
+    if (!pendingAtStart) return true;
+    const ok = pendingAtStart.type === 'patch'
+      ? await dbPatch(pendingAtStart.updates)
+      : await dbSet(key, pendingAtStart.value);
+    return finishPending(key, pendingAtStart, ok);
+  });
+  const persist = (key, value) => {
+    writeLocalCache(key, value);
+    pendingWrites.current = { ...pendingWrites.current, [key]: { type: 'put', value, snapshot: value } };
+    writePendingWrites(pendingWrites.current);
+    return flushPending(key);
   };
-  const persistBaseScores = async (next) => {
-    const ok = await dbSet('settings-base-score', next);
-    setSyncStatus(ok ? 'ok' : 'error');
+  const persistPatch = (key, snapshot, updates) => {
+    writeLocalCache(key, snapshot);
+    const previous = pendingWrites.current[key];
+    const previousUpdates = previous && previous.type === 'patch' ? previous.updates : {};
+    pendingWrites.current = {
+      ...pendingWrites.current,
+      [key]: { type: 'patch', updates: { ...previousUpdates, ...updates }, snapshot },
+    };
+    writePendingWrites(pendingWrites.current);
+    return flushPending(key);
   };
-  const persistExchangeRate = async (v) => {
-    const ok = await dbSet('settings-exchange-rate', v);
-    setSyncStatus(ok ? 'ok' : 'error');
+  const retryPendingWrites = () => {
+    Object.keys(pendingWrites.current).forEach((key) => {
+      if (!writeQueues.current[key]) flushPending(key);
+    });
   };
+  const pathPart = (value) => encodeURIComponent(String(value));
+  const childPath = (childId) => STORAGE_KEYS[childId];
+  const persistOverrides = (next, dateStr, value) => persistPatch('daytype-overrides', next, {
+    [`daytype-overrides/${pathPart(dateStr)}`]: value === 'auto' ? null : value,
+  });
+  const persistBaseScores = (next, childId, value) => persistPatch('settings-base-score', next, {
+    [`settings-base-score/${pathPart(childId)}`]: value,
+  });
+  const persistExchangeRate = (v) => persist('settings-exchange-rate', v);
 
   const handleBaseScoreChange = (childId, value) => {
+    const parsed = value === '' ? 0 : finiteNumber(value);
+    const val = parsed === null ? 0 : parsed;
     setBaseScores((prev) => {
-      const next = { ...prev, [childId]: value === '' ? 0 : Number(value) };
-      persistBaseScores(next);
+      const next = { ...prev, [childId]: val };
+      persistBaseScores(next, childId, val);
       return next;
     });
   };
   const handleExchangeRateChange = (value) => {
-    const v = value === '' ? 0 : Number(value);
-    setExchangeRate(v);
-    persistExchangeRate(v);
+    if (value === '') return;
+    const val = finiteNumber(value);
+    if (val === null || val <= 0) return;
+    setExchangeRate(val);
+    persistExchangeRate(val);
   };
 
   const handleAddDeduction = (childId, entry) => {
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
+      const existingDeductions = Array.isArray(childData.deductions) ? childData.deductions : [];
       const newDeduction = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry, recordedBy: whoAmI };
-      const newChildData = { ...childData, deductions: [newDeduction, ...(childData.deductions || [])] };
-      persistChild(childId, newChildData);
+      const newChildData = { ...childData, deductions: [newDeduction, ...existingDeductions] };
+      persistPatch(childPath(childId), newChildData, {
+        [`${childPath(childId)}/deductions/${pathPart(newDeduction.id)}`]: newDeduction,
+      });
       return { ...prev, [childId]: newChildData };
     });
   };
   const handleDeleteDeduction = (childId, id) => {
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
-      const newChildData = { ...childData, deductions: (childData.deductions || []).filter((d) => d.id !== id) };
-      persistChild(childId, newChildData);
+      const existingDeductions = Array.isArray(childData.deductions) ? childData.deductions : [];
+      const newChildData = { ...childData, deductions: existingDeductions.filter((d) => d && d.id !== id) };
+      persistPatch(childPath(childId), newChildData, {
+        [`${childPath(childId)}/deductions/${pathPart(id)}`]: null,
+      });
       return { ...prev, [childId]: newChildData };
     });
   };
@@ -1141,19 +1323,27 @@ function App() {
       
       if (grade) newScores[item] = grade; else delete newScores[item];
       
-      const newDay = { scores: newScores, recordedBy: whoAmI };
-      const newChildData = { ...childData, days: { ...safeDays, [dateStr]: newDay } };
-      
-      persistChild(childId, newChildData);
+      const nextDays = { ...safeDays };
+      if (Object.keys(newScores).length === 0) delete nextDays[dateStr];
+      else nextDays[dateStr] = { scores: newScores, recordedBy: whoAmI };
+      const newChildData = { ...childData, days: nextDays };
+      const dayRoot = `${childPath(childId)}/days/${pathPart(dateStr)}`;
+      const scoreUpdates = Object.keys(newScores).length === 0
+        ? { [dayRoot]: null }
+        : {
+            [`${dayRoot}/scores/${pathPart(item)}`]: grade || null,
+            [`${dayRoot}/recordedBy`]: whoAmI,
+          };
+      persistPatch(childPath(childId), newChildData, scoreUpdates);
       return { ...prev, [childId]: newChildData };
     });
   };
 
   const handleOverride = (dateStr, val) => {
     setOverrides((prev) => {
-      const next = { ...prev };
+      const next = { ...(prev || {}) };
       if (val === 'auto') delete next[dateStr]; else next[dateStr] = val;
-      persistOverrides(next);
+      persistOverrides(next, dateStr, val);
       return next;
     });
   };
@@ -1161,24 +1351,30 @@ function App() {
   const handleAddBonus = (childId, entry) => {
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
+      const existingBonuses = Array.isArray(childData.bonuses) ? childData.bonuses : [];
       const newBonus = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...entry, recordedBy: whoAmI };
-      const newChildData = { ...childData, bonuses: [newBonus, ...(childData.bonuses || [])] };
-      persistChild(childId, newChildData);
+      const newChildData = { ...childData, bonuses: [newBonus, ...existingBonuses] };
+      persistPatch(childPath(childId), newChildData, {
+        [`${childPath(childId)}/bonuses/${pathPart(newBonus.id)}`]: newBonus,
+      });
       return { ...prev, [childId]: newChildData };
     });
   };
   const handleDeleteBonus = (childId, id) => {
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
-      const newChildData = { ...childData, bonuses: (childData.bonuses || []).filter((b) => b.id !== id) };
-      persistChild(childId, newChildData);
+      const existingBonuses = Array.isArray(childData.bonuses) ? childData.bonuses : [];
+      const newChildData = { ...childData, bonuses: existingBonuses.filter((b) => b && b.id !== id) };
+      persistPatch(childPath(childId), newChildData, {
+        [`${childPath(childId)}/bonuses/${pathPart(id)}`]: null,
+      });
       return { ...prev, [childId]: newChildData };
     });
   };
 
   const handleWhoAmI = (v) => { setWhoAmI(v); };
 
-  const activeChildMeta = CHILDREN.find((c) => c.id === activeChild);
+  const activeChildMeta = CHILDREN.find((c) => c.id === activeChild) || CHILDREN[0];
 
   return (
     <div className="app-root">
@@ -1198,9 +1394,10 @@ function App() {
             </div>
           </div>
           {syncStatus === 'error' && (
-            <div className="sync-error-banner">⚠️ 無法連線到雲端資料庫，請檢查網路連線與 Firebase 設定</div>
+            <div className="sync-error-banner">⚠️ 雲端同步失敗；資料已暫存於本機，恢復網路後會自動重試</div>
           )}
 
+          <div className="main-scroll">
           {activeTab === 'daily' && (
             <>
               <ChildSwitch activeId={activeChild} onChange={setActiveChild} />
@@ -1238,7 +1435,7 @@ function App() {
           )}
 
           {activeTab === 'summary' && (
-            <SummaryView data={data} overrides={overrides} weekMonday={weekMonday} setWeekMonday={setWeekMonday} />
+            <SummaryView data={data} weekMonday={weekMonday} setWeekMonday={setWeekMonday} />
           )}
 
           {activeTab === 'bonus' && (
@@ -1272,6 +1469,7 @@ function App() {
               onDeleteDeduction={handleDeleteDeduction}
             />
           )}
+          </div>
 
           <div className="bottom-nav">
             <button className={`nav-btn${activeTab === 'daily' ? ' active' : ''}`} onClick={() => setActiveTab('daily')}>
