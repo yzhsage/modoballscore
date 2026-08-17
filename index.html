@@ -328,6 +328,21 @@ function finiteNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
+function decodeFirebaseKey(value) {
+  try { return decodeURIComponent(value); } catch (e) { return value; }
+}
+function normalizeChildData(value) {
+  const source = value && typeof value === 'object' ? value : {};
+  const days = Object.fromEntries(Object.entries(source.days || {}).map(([date, day]) => {
+    const scores = Object.fromEntries(Object.entries(day?.scores || {}).map(([item, grade]) => [decodeFirebaseKey(item), grade]));
+    return [date, { ...day, scores }];
+  }));
+  return {
+    days,
+    bonuses: Array.isArray(source.bonuses) ? source.bonuses : [],
+    deductions: Array.isArray(source.deductions) ? source.deductions : [],
+  };
+}
 async function fetchWithTimeout(url, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), DB_TIMEOUT_MS);
@@ -1138,6 +1153,9 @@ function App() {
   const [exchangeRate, setExchangeRate] = useState(5);
   const writeQueues = useRef({});
   const pendingWrites = useRef(readPendingWrites());
+  const fetchVersion = useRef(0);
+  const localMutationVersion = useRef(0);
+  const markLocalMutation = () => { localMutationVersion.current += 1; };
 
   const hasPending = (key) => Object.prototype.hasOwnProperty.call(pendingWrites.current, key);
   const applyRemoteOrLocal = (key, remote, fallback) => {
@@ -1145,10 +1163,15 @@ function App() {
       const pending = pendingWrites.current[key];
       return pending && pending.snapshot !== undefined ? pending.snapshot : pending;
     }
-    if (remote && remote.__error) return readLocalCache(key, remote.fallback ?? fallback);
+    if (remote && remote.__error) return key === STORAGE_KEYS.duoduo || key === STORAGE_KEYS.qiuqiu
+      ? normalizeChildData(readLocalCache(key, remote.fallback ?? fallback))
+      : readLocalCache(key, remote.fallback ?? fallback);
     const value = remote === null || remote === undefined ? fallback : remote;
-    writeLocalCache(key, value);
-    return value;
+    const normalized = key === STORAGE_KEYS.duoduo || key === STORAGE_KEYS.qiuqiu
+      ? normalizeChildData(value)
+      : value;
+    writeLocalCache(key, normalized);
+    return normalized;
   };
 
   const enqueueWrite = (key, writer) => {
@@ -1161,6 +1184,8 @@ function App() {
   };
 
   const fetchAll = async (isInitial) => {
+    const requestVersion = ++fetchVersion.current;
+    const mutationAtStart = localMutationVersion.current;
     const [dd, qq, ov, base, rate] = await Promise.all([
       dbGet(STORAGE_KEYS.duoduo, emptyChildData()),
       dbGet(STORAGE_KEYS.qiuqiu, emptyChildData()),
@@ -1168,6 +1193,10 @@ function App() {
       dbGet('settings-base-score', { duoduo: 0, qiuqiu: 0 }),
       dbGet('settings-exchange-rate', 5),
     ]);
+    if (requestVersion !== fetchVersion.current || mutationAtStart !== localMutationVersion.current) {
+      if (isInitial) setLoading(false);
+      return;
+    }
     const anyError = [dd, qq, ov, base, rate].some((r) => r && r.__error);
     const hasPendingData = Object.keys(pendingWrites.current).length > 0;
     setSyncStatus(anyError ? 'error' : hasPendingData ? 'connecting' : 'ok');
@@ -1203,7 +1232,10 @@ function App() {
     const cachedOverrides = readLocalCache('daytype-overrides', {});
     const cachedBase = readLocalCache('settings-base-score', { duoduo: 0, qiuqiu: 0 });
     const cachedRate = readLocalCache('settings-exchange-rate', 5);
-    setData({ duoduo: cachedDD, qiuqiu: cachedQQ });
+    setData({
+      duoduo: normalizeChildData(cachedDD),
+      qiuqiu: normalizeChildData(cachedQQ),
+    });
     setOverrides(cachedOverrides || {});
     setBaseScores(cachedBase || { duoduo: 0, qiuqiu: 0 });
     const cachedRateNumber = finiteNumber(cachedRate);
@@ -1263,7 +1295,7 @@ function App() {
       if (!writeQueues.current[key]) flushPending(key);
     });
   };
-  const pathPart = (value) => encodeURIComponent(String(value));
+  const pathPart = (value) => String(value);
   const childPath = (childId) => STORAGE_KEYS[childId];
   const persistOverrides = (next, dateStr, value) => persistPatch('daytype-overrides', next, {
     [`daytype-overrides/${pathPart(dateStr)}`]: value === 'auto' ? null : value,
@@ -1274,6 +1306,7 @@ function App() {
   const persistExchangeRate = (v) => persist('settings-exchange-rate', v);
 
   const handleBaseScoreChange = (childId, value) => {
+    markLocalMutation();
     const parsed = value === '' ? 0 : finiteNumber(value);
     const val = parsed === null ? 0 : parsed;
     setBaseScores((prev) => {
@@ -1284,6 +1317,7 @@ function App() {
   };
   const handleExchangeRateChange = (value) => {
     if (value === '') return;
+    markLocalMutation();
     const val = finiteNumber(value);
     if (val === null || val <= 0) return;
     setExchangeRate(val);
@@ -1291,6 +1325,7 @@ function App() {
   };
 
   const handleAddDeduction = (childId, entry) => {
+    markLocalMutation();
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
       const existingDeductions = Array.isArray(childData.deductions) ? childData.deductions : [];
@@ -1303,6 +1338,7 @@ function App() {
     });
   };
   const handleDeleteDeduction = (childId, id) => {
+    markLocalMutation();
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
       const existingDeductions = Array.isArray(childData.deductions) ? childData.deductions : [];
@@ -1315,6 +1351,7 @@ function App() {
   };
 
   const handleScoreChange = (childId, dateStr, item, grade) => {
+    markLocalMutation();
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
       const safeDays = childData.days || {};
@@ -1340,6 +1377,7 @@ function App() {
   };
 
   const handleOverride = (dateStr, val) => {
+    markLocalMutation();
     setOverrides((prev) => {
       const next = { ...(prev || {}) };
       if (val === 'auto') delete next[dateStr]; else next[dateStr] = val;
@@ -1349,6 +1387,7 @@ function App() {
   };
 
   const handleAddBonus = (childId, entry) => {
+    markLocalMutation();
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
       const existingBonuses = Array.isArray(childData.bonuses) ? childData.bonuses : [];
@@ -1361,6 +1400,7 @@ function App() {
     });
   };
   const handleDeleteBonus = (childId, id) => {
+    markLocalMutation();
     setData((prev) => {
       const childData = prev[childId] || emptyChildData();
       const existingBonuses = Array.isArray(childData.bonuses) ? childData.bonuses : [];
