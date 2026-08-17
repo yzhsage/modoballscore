@@ -299,6 +299,7 @@ const FIREBASE_URL = 'https://modoballscore-default-rtdb.asia-southeast1.firebas
 const DB_TIMEOUT_MS = 10000;
 const LOCAL_CACHE_PREFIX = 'modoballscore-cache-v2:';
 const LOCAL_PENDING_KEY = 'modoballscore-pending-v2';
+const LOCAL_WHOAMI_KEY = 'modoballscore-who-am-i';
 function safeJsonParse(value, fallback) {
   try { return value == null ? fallback : JSON.parse(value); }
   catch (e) { return fallback; }
@@ -310,6 +311,14 @@ function readLocalCache(key, fallback) {
 function writeLocalCache(key, value) {
   try { localStorage.setItem(LOCAL_CACHE_PREFIX + key, JSON.stringify(value)); return true; }
   catch (e) { console.error('local cache write error', key, e); return false; }
+}
+function readWhoAmI() {
+  try { return localStorage.getItem(LOCAL_WHOAMI_KEY) === '媽媽' ? '媽媽' : '爸爸'; }
+  catch (e) { return '爸爸'; }
+}
+function writeWhoAmI(value) {
+  try { localStorage.setItem(LOCAL_WHOAMI_KEY, value === '媽媽' ? '媽媽' : '爸爸'); }
+  catch (e) { console.error('whoAmI local setting error', e); }
 }
 function readPendingWrites() {
   try {
@@ -325,11 +334,24 @@ function writePendingWrites(value) {
   catch (e) { console.error('pending write cache error', e); return false; }
 }
 function finiteNumber(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
+function isCompleteNumberInput(value) {
+  const text = String(value ?? '').trim();
+  if (!text || text === '-' || text === '+' || text.endsWith('.')) return false;
+  return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text) && finiteNumber(text) !== null;
+}
 function decodeFirebaseKey(value) {
   try { return decodeURIComponent(value); } catch (e) { return value; }
+}
+function normalizeCollection(value) {
+  if (Array.isArray(value)) return value.filter((entry) => entry && typeof entry === 'object');
+  if (!value || typeof value !== 'object') return [];
+  return Object.entries(value)
+    .filter(([, entry]) => entry && typeof entry === 'object')
+    .map(([key, entry]) => ({ ...entry, id: entry.id || decodeFirebaseKey(key) }));
 }
 function normalizeChildData(value) {
   const source = value && typeof value === 'object' ? value : {};
@@ -339,8 +361,8 @@ function normalizeChildData(value) {
   }));
   return {
     days,
-    bonuses: Array.isArray(source.bonuses) ? source.bonuses : [],
-    deductions: Array.isArray(source.deductions) ? source.deductions : [],
+    bonuses: normalizeCollection(source.bonuses),
+    deductions: normalizeCollection(source.deductions),
   };
 }
 async function fetchWithTimeout(url, options = {}) {
@@ -504,9 +526,10 @@ function itemWeekTotal(childData = emptyChildData(), mondayStr, item) {
   dateStrs.forEach((ds) => {
     const grade = safeDays[ds]?.scores?.[item];
     const pt = GRADE_POINTS[grade];
-    if (pt !== undefined) total += pt;
+    // 未評分、空值或未知等級都視為 0，不能讓 total 變成 NaN。
+    if (typeof pt === 'number' && Number.isFinite(pt)) total += pt;
   });
-  return total;
+  return Number.isFinite(total) ? total : 0;
 }
 
 /* ---------------------------------------------------------
@@ -1022,7 +1045,8 @@ function TotalCard({ child, stats, exchangeRate }) {
 }
 
 function TotalView({
-  data, baseScores, exchangeRate, onBaseScoreChange, onExchangeRateChange,
+  data, baseScores, baseScoreInputs, exchangeRate, exchangeRateInput,
+  onBaseScoreChange, onExchangeRateChange,
   activeChild, setActiveChild, onAddDeduction, onDeleteDeduction,
 }) {
   const [showSettings, setShowSettings] = useState(false);
@@ -1076,12 +1100,12 @@ function TotalView({
         <div className="settings-panel">
           <div className="settings-row">
             <span>兌換匯率（1 點 = 幾元）</span>
-            <input className="input small" type="number" min="0.01" step="0.01" value={exchangeRate ?? ''} onChange={(e) => onExchangeRateChange(e.target.value)} />
+            <input className="input small" type="text" inputMode="decimal" value={exchangeRateInput ?? ''} onChange={(e) => onExchangeRateChange(e.target.value)} aria-label="兌換匯率" />
           </div>
           {CHILDREN.map((c) => (
             <div className="settings-row" key={c.id}>
               <span>{c.emoji} {c.name} 起始底分</span>
-              <input className="input small" type="number" min="-1000000" max="1000000" step="any" value={baseScores?.[c.id] ?? ''} onChange={(e) => onBaseScoreChange(c.id, e.target.value)} />
+              <input className="input small" type="text" inputMode="decimal" value={baseScoreInputs?.[c.id] ?? ''} onChange={(e) => onBaseScoreChange(c.id, e.target.value)} aria-label={`${c.name} 起始底分`} />
             </div>
           ))}
         </div>
@@ -1141,7 +1165,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ duoduo: emptyChildData(), qiuqiu: emptyChildData() });
   const [overrides, setOverrides] = useState({});
-  const [whoAmI, setWhoAmI] = useState('爸爸');
+  const [whoAmI, setWhoAmI] = useState(() => readWhoAmI());
   const [syncStatus, setSyncStatus] = useState('connecting');
 
   const [activeTab, setActiveTab] = useState('daily');
@@ -1150,8 +1174,12 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()));
   const [weekMonday, setWeekMonday] = useState(toDateStr(getMonday(new Date())));
   const [baseScores, setBaseScores] = useState({ duoduo: 0, qiuqiu: 0 });
+  const [baseScoreInputs, setBaseScoreInputs] = useState({ duoduo: '0', qiuqiu: '0' });
   const [exchangeRate, setExchangeRate] = useState(5);
+  const [exchangeRateInput, setExchangeRateInput] = useState('5');
   const writeQueues = useRef({});
+  const fetchAllRef = useRef(null);
+  const retryPendingWritesRef = useRef(null);
   const pendingWrites = useRef(readPendingWrites());
   const fetchVersion = useRef(0);
   const localMutationVersion = useRef(0);
@@ -1220,9 +1248,16 @@ function App() {
       },
     });
     setOverrides(rawOverrides || {});
-    setBaseScores(rawBase || { duoduo: 0, qiuqiu: 0 });
+    const nextBaseScores = rawBase || { duoduo: 0, qiuqiu: 0 };
+    setBaseScores(nextBaseScores);
+    setBaseScoreInputs({
+      duoduo: String(nextBaseScores.duoduo ?? 0),
+      qiuqiu: String(nextBaseScores.qiuqiu ?? 0),
+    });
     const fetchedRate = finiteNumber(rawRate);
-    setExchangeRate(fetchedRate !== null && fetchedRate > 0 ? fetchedRate : 5);
+    const nextRate = fetchedRate !== null && fetchedRate > 0 ? fetchedRate : 5;
+    setExchangeRate(nextRate);
+    setExchangeRateInput(String(nextRate));
     if (isInitial) setLoading(false);
   };
 
@@ -1237,13 +1272,21 @@ function App() {
       qiuqiu: normalizeChildData(cachedQQ),
     });
     setOverrides(cachedOverrides || {});
-    setBaseScores(cachedBase || { duoduo: 0, qiuqiu: 0 });
+    const nextCachedBase = cachedBase || { duoduo: 0, qiuqiu: 0 };
+    setBaseScores(nextCachedBase);
+    setBaseScoreInputs({
+      duoduo: String(nextCachedBase.duoduo ?? 0),
+      qiuqiu: String(nextCachedBase.qiuqiu ?? 0),
+    });
     const cachedRateNumber = finiteNumber(cachedRate);
-    setExchangeRate(cachedRateNumber !== null && cachedRateNumber > 0 ? cachedRateNumber : 5);
-    fetchAll(true);
-    const interval = setInterval(() => { retryPendingWrites(); fetchAll(false); }, 15000);
-    const onVisible = () => { if (document.visibilityState === 'visible') { retryPendingWrites(); fetchAll(false); } };
-    const onOnline = () => { setSyncStatus('connecting'); retryPendingWrites(); fetchAll(false); };
+    const nextCachedRate = cachedRateNumber !== null && cachedRateNumber > 0 ? cachedRateNumber : 5;
+    setExchangeRate(nextCachedRate);
+    setExchangeRateInput(String(nextCachedRate));
+    retryPendingWritesRef.current?.();
+    fetchAllRef.current?.(true);
+    const interval = setInterval(() => { retryPendingWritesRef.current?.(); fetchAllRef.current?.(false); }, 15000);
+    const onVisible = () => { if (document.visibilityState === 'visible') { retryPendingWritesRef.current?.(); fetchAllRef.current?.(false); } };
+    const onOnline = () => { setSyncStatus('connecting'); retryPendingWritesRef.current?.(); fetchAllRef.current?.(false); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
     window.addEventListener('online', onOnline);
@@ -1295,7 +1338,9 @@ function App() {
       if (!writeQueues.current[key]) flushPending(key);
     });
   };
-  const pathPart = (value) => String(value);
+  fetchAllRef.current = fetchAll;
+  retryPendingWritesRef.current = retryPendingWrites;
+  const pathPart = (value) => encodeURIComponent(String(value));
   const childPath = (childId) => STORAGE_KEYS[childId];
   const persistOverrides = (next, dateStr, value) => persistPatch('daytype-overrides', next, {
     [`daytype-overrides/${pathPart(dateStr)}`]: value === 'auto' ? null : value,
@@ -1307,8 +1352,10 @@ function App() {
 
   const handleBaseScoreChange = (childId, value) => {
     markLocalMutation();
-    const parsed = value === '' ? 0 : finiteNumber(value);
-    const val = parsed === null ? 0 : parsed;
+    setBaseScoreInputs((prev) => ({ ...prev, [childId]: value }));
+    if (!isCompleteNumberInput(value)) return;
+    const val = finiteNumber(value);
+    if (val === null || val < -1000000 || val > 1000000) return;
     setBaseScores((prev) => {
       const next = { ...prev, [childId]: val };
       persistBaseScores(next, childId, val);
@@ -1316,8 +1363,9 @@ function App() {
     });
   };
   const handleExchangeRateChange = (value) => {
-    if (value === '') return;
     markLocalMutation();
+    setExchangeRateInput(value);
+    if (!isCompleteNumberInput(value)) return;
     const val = finiteNumber(value);
     if (val === null || val <= 0) return;
     setExchangeRate(val);
@@ -1412,7 +1460,7 @@ function App() {
     });
   };
 
-  const handleWhoAmI = (v) => { setWhoAmI(v); };
+  const handleWhoAmI = (v) => { writeWhoAmI(v); setWhoAmI(v); };
 
   const activeChildMeta = CHILDREN.find((c) => c.id === activeChild) || CHILDREN[0];
 
@@ -1500,7 +1548,9 @@ function App() {
             <TotalView
               data={data}
               baseScores={baseScores}
+              baseScoreInputs={baseScoreInputs}
               exchangeRate={exchangeRate}
+              exchangeRateInput={exchangeRateInput}
               onBaseScoreChange={handleBaseScoreChange}
               onExchangeRateChange={handleExchangeRateChange}
               activeChild={activeChild}
